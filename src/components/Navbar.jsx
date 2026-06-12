@@ -34,6 +34,27 @@ export default function Navbar() {
             <Link to="/labs" onClick={() => setMenuOpen(false)}>Lab Tests</Link>
             <Link to="/medicines" onClick={() => setMenuOpen(false)}>Medicines</Link>
             <Link to="/deals" onClick={() => setMenuOpen(false)}>Deals</Link>
+            <div className="nav-mobile-user">
+              {user ? (
+                <>
+                  {user.role === 'admin' && (
+                    <Link to="/admin" onClick={() => setMenuOpen(false)} className="btn btn-outline btn-sm">Admin</Link>
+                  )}
+                  {user.role === 'doctor' && (
+                    <Link to="/doctor/consultations" onClick={() => setMenuOpen(false)} className="btn btn-outline btn-sm">Consultations</Link>
+                  )}
+                  <Link to="/appointments" onClick={() => setMenuOpen(false)} className="btn btn-outline btn-sm">Appointments</Link>
+                  <button
+                    onClick={() => { handleLogout(); setMenuOpen(false); }}
+                    className="btn btn-primary btn-sm"
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <Link to="/login" onClick={() => setMenuOpen(false)} className="btn btn-primary btn-sm">Login</Link>
+              )}
+            </div>
           </div>
 
           <div className="nav-actions">
@@ -56,7 +77,7 @@ export default function Navbar() {
                 <button onClick={handleLogout} className="btn btn-primary btn-sm">Logout</button>
               </div>
             ) : (
-              <Link to="/login" className="btn btn-primary btn-sm">Login</Link>
+              <Link to="/login" className="btn btn-primary btn-sm nav-login-btn">Login</Link>
             )}
             <button className="menu-toggle" onClick={() => setMenuOpen(!menuOpen)}>☰</button>
           </div>
