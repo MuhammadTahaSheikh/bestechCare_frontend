@@ -1,25 +1,51 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { api } from '../api/client';
 
 export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
   const [loading, setLoading] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [unverifiedEmail, setUnverifiedEmail] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setInfo('');
+    setUnverifiedEmail('');
     setLoading(true);
     try {
       await login(form.email, form.password);
       navigate('/');
     } catch (err) {
-      setError(err.message);
+      if (err.code === 'EMAIL_NOT_VERIFIED') {
+        setUnverifiedEmail(err.email || form.email);
+        setError(err.message);
+      } else {
+        setError(err.message);
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    const email = unverifiedEmail || form.email;
+    if (!email) return;
+    setResendLoading(true);
+    setInfo('');
+    try {
+      const data = await api.resendVerification({ email });
+      setInfo(data.message);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setResendLoading(false);
     }
   };
 
@@ -49,19 +75,27 @@ export default function Login() {
             />
           </div>
           {error && <p className="message error">{error}</p>}
+          {info && <p className="message success">{info}</p>}
           <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
             {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>
 
+        {unverifiedEmail && (
+          <button
+            type="button"
+            className="btn btn-block"
+            style={{ marginTop: '0.75rem' }}
+            onClick={handleResend}
+            disabled={resendLoading}
+          >
+            {resendLoading ? 'Sending...' : 'Resend verification email'}
+          </button>
+        )}
+
         <p className="auth-footer">
           Don't have an account? <Link to="/register">Register</Link>
         </p>
-        {/* <p className="demo-credentials text-muted">
-          Patient: patient@example.com / password123<br />
-          Doctor: ayesha.khan@example.com / password123<br />
-          Admin: admin@bestechcare.pk / password123
-        </p> */}
       </div>
     </div>
   );

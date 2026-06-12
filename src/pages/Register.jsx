@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
 
 export default function Register() {
-  const { register } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [cities, setCities] = useState([]);
@@ -29,11 +27,11 @@ export default function Register() {
     setError('');
     setLoading(true);
     try {
-      await register({
+      const data = await api.register({
         ...form,
         city_id: form.city_id ? Number(form.city_id) : null,
       });
-      navigate('/');
+      navigate('/check-email', { state: { email: data.email } });
     } catch (err) {
       setError(err.message);
     } finally {

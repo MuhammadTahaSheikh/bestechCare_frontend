@@ -14,7 +14,10 @@ async function request(endpoint, options = {}) {
   const data = await res.json();
 
   if (!res.ok) {
-    throw new Error(data.error || 'Something went wrong');
+    const err = new Error(data.error || 'Something went wrong');
+    err.code = data.code;
+    err.email = data.email;
+    throw err;
   }
   return data;
 }
@@ -23,6 +26,9 @@ export const api = {
   // Auth
   login: (body) => request('/auth/login', { method: 'POST', body: JSON.stringify(body) }),
   register: (body) => request('/auth/register', { method: 'POST', body: JSON.stringify(body) }),
+  verifyEmail: (token) => request(`/auth/verify-email?token=${encodeURIComponent(token)}`),
+  resendVerification: (body) =>
+    request('/auth/resend-verification', { method: 'POST', body: JSON.stringify(body) }),
   getProfile: () => request('/auth/profile'),
 
   // Data

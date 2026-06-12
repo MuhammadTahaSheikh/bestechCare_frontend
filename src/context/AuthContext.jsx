@@ -27,10 +27,7 @@ export function AuthProvider({ children }) {
   };
 
   const register = async (formData) => {
-    const data = await api.register(formData);
-    localStorage.setItem('token', data.token);
-    setUser(data.user);
-    return data;
+    return api.register(formData);
   };
 
   const logout = () => {

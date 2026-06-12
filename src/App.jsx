@@ -22,6 +22,8 @@ import About from './pages/About';
 import Terms from './pages/Terms';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import CheckEmail from './pages/CheckEmail';
+import VerifyEmail from './pages/VerifyEmail';
 import Appointments from './pages/Appointments';
 import Payment from './pages/Payment';
 import VideoConsultation from './pages/VideoConsultation';
@@ -82,6 +84,8 @@ export default function App() {
                 <Route path="/terms" element={<Terms />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
+                <Route path="/check-email" element={<CheckEmail />} />
+                <Route path="/verify-email" element={<VerifyEmail />} />
                 <Route path="/appointments" element={<ProtectedRoute><Appointments /></ProtectedRoute>} />
                 <Route path="/payment" element={<ProtectedRoute><Payment /></ProtectedRoute>} />
                 <Route path="/doctor/consultations" element={
