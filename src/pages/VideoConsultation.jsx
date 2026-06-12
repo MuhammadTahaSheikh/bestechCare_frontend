@@ -56,16 +56,25 @@ export default function VideoConsultation() {
           }
         };
 
+        const sendOfferIfDoctor = async () => {
+          if (roomData.role !== 'doctor') return;
+          const offer = await pc.createOffer();
+          await pc.setLocalDescription(offer);
+          socket.emit('offer', { roomId: roomData.room_id, offer });
+        };
+
         socket.on('connect', () => {
           socket.emit('join-room', { roomId: roomData.room_id, role: roomData.role });
         });
 
-        socket.on('user-joined', async () => {
-          if (roomData.role === 'doctor') {
-            const offer = await pc.createOffer();
-            await pc.setLocalDescription(offer);
-            socket.emit('offer', { roomId: roomData.room_id, offer });
-          }
+        // Doctor already in room: patient joining triggers offer.
+        socket.on('user-joined', () => {
+          sendOfferIfDoctor().catch(() => {});
+        });
+
+        // Patient already in room: doctor joining must start offer (user-joined only goes to existing peers).
+        socket.on('room-joined', ({ participants }) => {
+          if (participants >= 2) sendOfferIfDoctor().catch(() => {});
         });
 
         socket.on('offer', async ({ offer }) => {
