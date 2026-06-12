@@ -16,6 +16,7 @@ export default function Payment() {
   const [otp, setOtp] = useState('');
   const [paymentId, setPaymentId] = useState(null);
   const [paymentMode, setPaymentMode] = useState('demo');
+  const [otpMessage, setOtpMessage] = useState('');
   const [demoOtp, setDemoOtp] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -54,7 +55,8 @@ export default function Payment() {
       }
 
       setPaymentId(result.payment_id);
-      setPaymentMode(result.mode || 'demo');
+      setPaymentMode(result.payment_mode || result.mode || 'demo');
+      setOtpMessage(result.message || '');
       setDemoOtp(result.demo_otp || '');
       setStep('otp');
     } catch (err) {
@@ -170,9 +172,10 @@ export default function Payment() {
             <form onSubmit={handleVerify}>
               <h3>Enter OTP</h3>
               <p className="text-muted">
-                {paymentMode === 'jazzcash'
-                  ? `An OTP has been sent to ${phone} via JazzCash SMS.`
-                  : `An OTP has been sent to ${phone}`}
+                {otpMessage ||
+                  (paymentMode === 'jazzcash'
+                    ? `An OTP has been sent to ${phone} via JazzCash SMS.`
+                    : `An OTP has been sent to your registered email.`)}
               </p>
               {demoOtp && <p className="demo-otp">Demo OTP: <strong>{demoOtp}</strong></p>}
               <div className="form-group">
