@@ -26,6 +26,7 @@ import CheckEmail from './pages/CheckEmail';
 import VerifyEmail from './pages/VerifyEmail';
 import Appointments from './pages/Appointments';
 import Payment from './pages/Payment';
+import PaymentResult from './pages/PaymentResult';
 import VideoConsultation from './pages/VideoConsultation';
 import DoctorConsultations from './pages/DoctorConsultations';
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -88,6 +89,7 @@ export default function App() {
                 <Route path="/verify-email" element={<VerifyEmail />} />
                 <Route path="/appointments" element={<ProtectedRoute><Appointments /></ProtectedRoute>} />
                 <Route path="/payment" element={<ProtectedRoute><Payment /></ProtectedRoute>} />
+                <Route path="/payment/result" element={<PaymentResult />} />
                 <Route path="/doctor/consultations" element={
                   <ProtectedRoute roles={['doctor']}><DoctorConsultations /></ProtectedRoute>
                 } />
