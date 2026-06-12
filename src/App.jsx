@@ -18,6 +18,8 @@ import Medicines from './pages/Medicines';
 import Cart from './pages/Cart';
 import MyOrders from './pages/MyOrders';
 import Blog from './pages/Blog';
+import About from './pages/About';
+import Terms from './pages/Terms';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Appointments from './pages/Appointments';
@@ -76,6 +78,8 @@ export default function App() {
                 <Route path="/cart" element={<Cart />} />
                 <Route path="/orders" element={<ProtectedRoute><MyOrders /></ProtectedRoute>} />
                 <Route path="/blog" element={<Blog />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/terms" element={<Terms />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/appointments" element={<ProtectedRoute><Appointments /></ProtectedRoute>} />
