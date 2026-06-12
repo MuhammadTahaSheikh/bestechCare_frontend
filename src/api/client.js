@@ -1,4 +1,6 @@
-const API_BASE = '/api';
+import { API_URL } from '../config.js';
+
+const API_BASE = API_URL ? `${API_URL}/api` : '/api';
 
 async function request(endpoint, options = {}) {
   const token = localStorage.getItem('token');

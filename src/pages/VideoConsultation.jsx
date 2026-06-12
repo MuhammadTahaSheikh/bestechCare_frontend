@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import { api } from '../api/client';
+import { API_URL } from '../config.js';
 
 const ICE_SERVERS = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
@@ -34,7 +35,7 @@ export default function VideoConsultation() {
         if (localVideoRef.current) localVideoRef.current.srcObject = stream;
 
         const token = localStorage.getItem('token');
-        const socket = io('/', { auth: { token } });
+        const socket = io(API_URL || window.location.origin, { auth: { token } });
         socketRef.current = socket;
 
         const pc = new RTCPeerConnection(ICE_SERVERS);
