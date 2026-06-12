@@ -57,11 +57,11 @@ export default function Login() {
         <p className="auth-footer">
           Don't have an account? <Link to="/register">Register</Link>
         </p>
-        <p className="demo-credentials text-muted">
+        {/* <p className="demo-credentials text-muted">
           Patient: patient@example.com / password123<br />
           Doctor: ayesha.khan@example.com / password123<br />
           Admin: admin@bestechcare.pk / password123
-        </p>
+        </p> */}
       </div>
     </div>
   );
