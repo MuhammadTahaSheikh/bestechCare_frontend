@@ -2496,3 +2496,164 @@ a {
     grid-template-columns: 1fr;
   }
 }
+
+.ai-doctor-voice-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(135deg, var(--primary-light) 0%, #f0fdf9 100%);
+}
+
+.ai-doctor-mic-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 18px;
+  border: 2px solid var(--primary);
+  border-radius: 999px;
+  background: var(--white);
+  color: var(--primary-dark);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ai-doctor-mic-btn:hover:not(:disabled) {
+  background: var(--primary);
+  color: white;
+}
+
+.ai-doctor-mic-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ai-doctor-mic-btn.listening {
+  background: var(--primary);
+  color: white;
+  animation: ai-doctor-pulse 1.2s ease-in-out infinite;
+  box-shadow: 0 0 0 0 rgba(0, 168, 150, 0.5);
+}
+
+.ai-doctor-mic-btn.speaking {
+  border-color: var(--accent);
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.ai-doctor-mic-icon {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.ai-doctor-mic-label {
+  font-size: 0.9rem;
+}
+
+.ai-doctor-voice-options {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.ai-doctor-voice-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.ai-doctor-voice-toggle input {
+  accent-color: var(--primary);
+}
+
+.ai-doctor-voice-lang {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  background: var(--white);
+}
+
+.ai-doctor-voice-hint {
+  padding: 10px 16px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+  background: #f9fafb;
+}
+
+.ai-doctor-interim {
+  padding: 10px 16px;
+  font-size: 0.9rem;
+  color: var(--primary-dark);
+  background: #ecfdf5;
+  border-bottom: 1px dashed var(--primary);
+  font-style: italic;
+}
+
+.ai-doctor-mic-inline {
+  padding: 10px 14px;
+  min-width: 44px;
+}
+
+.ai-doctor-mic-inline.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.ai-doctor-msg-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ai-doctor-speak-btn {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.85rem;
+  opacity: 0.6;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.ai-doctor-speak-btn:hover {
+  opacity: 1;
+}
+
+@keyframes ai-doctor-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(0, 168, 150, 0.45);
+  }
+  70% {
+    box-shadow: 0 0 0 12px rgba(0, 168, 150, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 168, 150, 0);
+  }
+}
+
+@media (max-width: 640px) {
+  .ai-doctor-voice-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ai-doctor-mic-btn {
+    justify-content: center;
+  }
+
+  .ai-doctor-voice-options {
+    justify-content: center;
+  }
+}

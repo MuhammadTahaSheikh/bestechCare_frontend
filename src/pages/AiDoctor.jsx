@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import { useCity } from '../context/CityContext';
+import { useAiDoctorVoice } from '../hooks/useAiDoctorVoice';
 
 const SESSION_KEY = 'ai_doctor_session_id';
 
@@ -18,10 +19,58 @@ export default function AiDoctor() {
   const [doctors, setDoctors] = useState([]);
   const [error, setError] = useState('');
   const chatEndRef = useRef(null);
+  const lastSpokenRef = useRef(-1);
+  const sendMessageRef = useRef(null);
+
+  const sendMessage = useCallback(async (text) => {
+    const trimmed = text?.trim();
+    if (!trimmed || !sessionId || sending) return;
+
+    setInput('');
+    setSending(true);
+    setError('');
+    setMessages((prev) => [...prev, { role: 'user', content: trimmed }]);
+
+    try {
+      const { reply } = await api.sendAiDoctorMessage(sessionId, trimmed);
+      setMessages((prev) => [...prev, { role: 'assistant', content: reply }]);
+    } catch (err) {
+      setError(err.message);
+      setMessages((prev) => prev.slice(0, -1));
+      setInput(trimmed);
+    } finally {
+      setSending(false);
+    }
+  }, [sessionId, sending]);
+
+  sendMessageRef.current = sendMessage;
+
+  const handleVoiceTranscript = useCallback((text) => {
+    setInput(text);
+    sendMessageRef.current?.(text);
+  }, []);
+
+  const voiceEnabled = configured && !summary && !loading;
+  const {
+    voiceSupported,
+    isListening,
+    isSpeaking,
+    voiceReplies,
+    setVoiceReplies,
+    handsFree,
+    setHandsFree,
+    interimText,
+    voiceLang,
+    setVoiceLang,
+    toggleListening,
+    speak,
+    stopSpeaking,
+    startListening,
+  } = useAiDoctorVoice({ onTranscript: handleVoiceTranscript, enabled: voiceEnabled });
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, summary]);
+  }, [messages, summary, interimText]);
 
   useEffect(() => {
     let cancelled = false;
@@ -45,6 +94,7 @@ export default function AiDoctor() {
             if (session.status === 'active') {
               setSessionId(savedId);
               setMessages(session.messages || []);
+              lastSpokenRef.current = Math.max(0, (session.messages?.length || 1) - 1);
               setLoading(false);
               return;
             }
@@ -58,6 +108,7 @@ export default function AiDoctor() {
         sessionStorage.setItem(SESSION_KEY, session.id);
         setSessionId(session.id);
         setMessages([{ role: 'assistant', content: session.message }]);
+        lastSpokenRef.current = -1;
       } catch (err) {
         if (!cancelled) setError(err.message);
       } finally {
@@ -69,30 +120,32 @@ export default function AiDoctor() {
     return () => { cancelled = true; };
   }, [city]);
 
-  const handleSend = async (e) => {
+  useEffect(() => {
+    if (!voiceReplies || sending || summary) return;
+
+    const lastIdx = messages.length - 1;
+    const last = messages[lastIdx];
+    if (!last || last.role !== 'assistant') return;
+    if (lastIdx <= lastSpokenRef.current) return;
+
+    lastSpokenRef.current = lastIdx;
+    speak(last.content, {
+      onDone: () => {
+        if (handsFree && voiceEnabled && !sending) {
+          setTimeout(() => startListening(), 400);
+        }
+      },
+    });
+  }, [messages, voiceReplies, sending, summary, speak, handsFree, voiceEnabled, startListening]);
+
+  const handleSend = (e) => {
     e.preventDefault();
-    const text = input.trim();
-    if (!text || !sessionId || sending) return;
-
-    setInput('');
-    setSending(true);
-    setError('');
-    setMessages((prev) => [...prev, { role: 'user', content: text }]);
-
-    try {
-      const { reply } = await api.sendAiDoctorMessage(sessionId, text);
-      setMessages((prev) => [...prev, { role: 'assistant', content: reply }]);
-    } catch (err) {
-      setError(err.message);
-      setMessages((prev) => prev.slice(0, -1));
-      setInput(text);
-    } finally {
-      setSending(false);
-    }
+    sendMessage(input);
   };
 
   const handleComplete = async () => {
     if (!sessionId || completing) return;
+    stopSpeaking();
     setCompleting(true);
     setError('');
 
@@ -101,6 +154,9 @@ export default function AiDoctor() {
       setSummary(result.summary);
       setDoctors(result.recommended_doctors || []);
       sessionStorage.removeItem(SESSION_KEY);
+      if (voiceReplies && result.summary?.summary) {
+        speak(`Consultation complete. ${result.summary.summary}`);
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -109,10 +165,12 @@ export default function AiDoctor() {
   };
 
   const handleNewConsultation = async () => {
+    stopSpeaking();
     setLoading(true);
     setSummary(null);
     setDoctors([]);
     setError('');
+    lastSpokenRef.current = -1;
     sessionStorage.removeItem(SESSION_KEY);
 
     try {
@@ -150,7 +208,7 @@ export default function AiDoctor() {
           <div>
             <h1>AI Doctor</h1>
             <p className="text-muted">
-              Symptom guidance powered by AI — always consult a real doctor for diagnosis and treatment.
+              Chat by text or voice — always consult a real doctor for diagnosis and treatment.
             </p>
           </div>
           {!summary && userMessageCount > 0 && (
@@ -191,11 +249,80 @@ export default function AiDoctor() {
 
         <div className="ai-doctor-layout">
           <div className="ai-doctor-chat">
+            {voiceSupported && configured && !summary && (
+              <div className="ai-doctor-voice-bar">
+                <button
+                  type="button"
+                  className={`ai-doctor-mic-btn ${isListening ? 'listening' : ''} ${isSpeaking ? 'speaking' : ''}`}
+                  onClick={toggleListening}
+                  disabled={sending}
+                  title={isListening ? 'Stop listening' : 'Tap to speak'}
+                  aria-label={isListening ? 'Stop microphone' : 'Start microphone'}
+                >
+                  <span className="ai-doctor-mic-icon">
+                    {isListening ? '🎙️' : isSpeaking ? '🔊' : '🎤'}
+                  </span>
+                  <span className="ai-doctor-mic-label">
+                    {isListening ? 'Listening… tap to stop' : isSpeaking ? 'AI speaking…' : 'Tap to talk'}
+                  </span>
+                </button>
+
+                <div className="ai-doctor-voice-options">
+                  <label className="ai-doctor-voice-toggle">
+                    <input
+                      type="checkbox"
+                      checked={voiceReplies}
+                      onChange={(e) => setVoiceReplies(e.target.checked)}
+                    />
+                    Voice replies
+                  </label>
+                  <label className="ai-doctor-voice-toggle">
+                    <input
+                      type="checkbox"
+                      checked={handsFree}
+                      onChange={(e) => setHandsFree(e.target.checked)}
+                    />
+                    Hands-free
+                  </label>
+                  <select
+                    className="ai-doctor-voice-lang"
+                    value={voiceLang}
+                    onChange={(e) => setVoiceLang(e.target.value)}
+                    aria-label="Voice language"
+                  >
+                    <option value="en-US">English</option>
+                    <option value="ur-PK">Urdu</option>
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {!voiceSupported && configured && !summary && (
+              <p className="ai-doctor-voice-hint">
+                Voice chat works best in Chrome or Edge on desktop/mobile.
+              </p>
+            )}
+
+            {(isListening && interimText) && (
+              <div className="ai-doctor-interim">You: {interimText}</div>
+            )}
+
             <div className="ai-doctor-messages">
               {messages.map((msg, i) => (
                 <div key={i} className={`ai-doctor-msg ai-doctor-msg-${msg.role}`}>
                   <span className="ai-doctor-msg-label">
                     {msg.role === 'user' ? 'You' : 'AI Doctor'}
+                    {msg.role === 'assistant' && voiceSupported && (
+                      <button
+                        type="button"
+                        className="ai-doctor-speak-btn"
+                        onClick={() => speak(msg.content)}
+                        title="Listen to this message"
+                        aria-label="Play message audio"
+                      >
+                        🔊
+                      </button>
+                    )}
                   </span>
                   <div className="ai-doctor-msg-content">{msg.content}</div>
                 </div>
@@ -215,9 +342,21 @@ export default function AiDoctor() {
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder="Describe your symptoms or answer a question..."
+                  placeholder="Type or tap the microphone to speak..."
                   disabled={sending || !sessionId}
                 />
+                {voiceSupported && (
+                  <button
+                    type="button"
+                    className={`btn btn-secondary ai-doctor-mic-inline ${isListening ? 'active' : ''}`}
+                    onClick={toggleListening}
+                    disabled={sending}
+                    title="Speak"
+                    aria-label="Microphone"
+                  >
+                    🎤
+                  </button>
+                )}
                 <button type="submit" className="btn btn-primary" disabled={sending || !input.trim()}>
                   Send
                 </button>
