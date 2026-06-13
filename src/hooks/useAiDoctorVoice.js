@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   detectLanguageFromText,
-  pickSpeechVoice,
-  stripForSpeech,
   voiceLangFor,
 } from '../utils/languageUtils';
+import {
+  pickSpeechVoice,
+  prepareSpeech,
+  langCodeFromVoiceLang,
+} from '../utils/speechUtils';
 
 const SpeechRecognition =
   typeof window !== 'undefined'
@@ -60,15 +63,23 @@ export function useAiDoctorVoice({ onTranscript, enabled = true, onLanguageDetec
         return;
       }
 
-      const speakLang = lang || voiceLangRef.current;
-
       stopSpeaking();
-      const utterance = new SpeechSynthesisUtterance(stripForSpeech(text));
-      utterance.lang = speakLang;
-      utterance.rate = speakLang.startsWith('ur') ? 0.9 : 0.95;
+
+      const speakLang = lang || voiceLangRef.current;
+      const langCode = langCodeFromVoiceLang(speakLang);
+      const { text: speechText, lang: utteranceLang, useRomanUrdu } = prepareSpeech(text, langCode);
+
+      if (!speechText) {
+        onDone?.();
+        return;
+      }
+
+      const utterance = new SpeechSynthesisUtterance(speechText);
+      utterance.lang = utteranceLang;
+      utterance.rate = useRomanUrdu || utteranceLang.startsWith('ur') ? 0.88 : 0.95;
       utterance.pitch = 1;
 
-      const voice = pickSpeechVoice(speakLang);
+      const voice = pickSpeechVoice(utteranceLang, { forRomanUrdu: useRomanUrdu });
       if (voice) utterance.voice = voice;
 
       utterance.onstart = () => setIsSpeaking(true);
@@ -189,10 +200,15 @@ export function useAiDoctorVoice({ onTranscript, enabled = true, onLanguageDetec
   }, [isListening, startListening, stopListening]);
 
   useEffect(() => {
-    const loadVoices = () => window.speechSynthesis?.getVoices();
+    const loadVoices = () => {
+      window.speechSynthesis?.getVoices();
+    };
     loadVoices();
     window.speechSynthesis?.addEventListener('voiceschanged', loadVoices);
+    // Chrome loads voices async — retry once
+    const t = setTimeout(loadVoices, 500);
     return () => {
+      clearTimeout(t);
       window.speechSynthesis?.removeEventListener('voiceschanged', loadVoices);
       stopListening();
       stopSpeaking();
