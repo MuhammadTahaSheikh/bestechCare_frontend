@@ -16,6 +16,8 @@ export default function DoctorDetail() {
     type: 'in_clinic',
     notes: '',
   });
+  const [availableSlots, setAvailableSlots] = useState([]);
+  const [slotsLoading, setSlotsLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [reviews, setReviews] = useState([]);
   const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' });
@@ -32,6 +34,29 @@ export default function DoctorDetail() {
       .finally(() => setLoading(false));
     loadReviews();
   }, [id]);
+
+  useEffect(() => {
+    if (!form.appointment_date) {
+      setAvailableSlots([]);
+      setForm((prev) => ({ ...prev, appointment_time: '' }));
+      return;
+    }
+
+    setSlotsLoading(true);
+    api
+      .getDoctorAvailableSlots(id, form.appointment_date)
+      .then((data) => {
+        setAvailableSlots(data.slots || []);
+        setForm((prev) => ({
+          ...prev,
+          appointment_time: data.slots?.includes(prev.appointment_time) ? prev.appointment_time : '',
+        }));
+      })
+      .catch(() => setAvailableSlots([]))
+      .finally(() => setSlotsLoading(false));
+  }, [id, form.appointment_date]);
+
+  const minDate = new Date().toISOString().slice(0, 10);
 
   const handleReview = async (e) => {
     e.preventDefault();
@@ -55,6 +80,11 @@ export default function DoctorDetail() {
     e.preventDefault();
     if (!user) {
       navigate('/login');
+      return;
+    }
+
+    if (!form.appointment_date || !form.appointment_time) {
+      setMessage('Please select a date and time slot');
       return;
     }
 
@@ -177,18 +207,33 @@ export default function DoctorDetail() {
                   <input
                     type="date"
                     required
+                    min={minDate}
                     value={form.appointment_date}
-                    onChange={(e) => setForm({ ...form, appointment_date: e.target.value })}
+                    onChange={(e) => setForm({ ...form, appointment_date: e.target.value, appointment_time: '' })}
                   />
                 </div>
                 <div className="form-group">
                   <label>Time</label>
-                  <input
-                    type="time"
-                    required
-                    value={form.appointment_time}
-                    onChange={(e) => setForm({ ...form, appointment_time: e.target.value })}
-                  />
+                  {!form.appointment_date ? (
+                    <p className="text-muted">Select a date to see available slots</p>
+                  ) : slotsLoading ? (
+                    <p className="text-muted">Loading available slots...</p>
+                  ) : availableSlots.length === 0 ? (
+                    <p className="text-muted">No slots available for this date</p>
+                  ) : (
+                    <div className="slot-grid">
+                      {availableSlots.map((slot) => (
+                        <button
+                          key={slot}
+                          type="button"
+                          className={`slot-btn ${form.appointment_time === slot ? 'active' : ''}`}
+                          onClick={() => setForm({ ...form, appointment_time: slot })}
+                        >
+                          {slot}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div className="form-group">
                   <label>Type</label>
@@ -208,7 +253,11 @@ export default function DoctorDetail() {
                     rows={3}
                   />
                 </div>
-                <button type="submit" className="btn btn-primary btn-block" disabled={booking}>
+                <button
+                  type="submit"
+                  className="btn btn-primary btn-block"
+                  disabled={booking || !form.appointment_time}
+                >
                   {booking ? 'Booking...' : 'Book Now'}
                 </button>
               </form>

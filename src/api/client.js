@@ -39,6 +39,8 @@ export const api = {
     return request(`/doctors${query ? `?${query}` : ''}`);
   },
   getDoctor: (id) => request(`/doctors/${id}`),
+  getDoctorAvailableSlots: (doctorId, date) =>
+    request(`/doctors/${doctorId}/available-slots?date=${encodeURIComponent(date)}`),
   getHospitals: (params = {}) => {
     const query = new URLSearchParams(params).toString();
     return request(`/hospitals${query ? `?${query}` : ''}`);
