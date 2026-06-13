@@ -11,6 +11,7 @@ const navItems = [
   { to: '/hospitals', label: 'Hospitals' },
   { to: '/labs', label: 'Lab Tests' },
   { to: '/medicines', label: 'Medicines' },
+  { to: '/ai-doctor', label: 'AI Doctor' },
   { to: '/deals', label: 'Deals' },
 ];
 

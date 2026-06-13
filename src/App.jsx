@@ -29,6 +29,7 @@ import Payment from './pages/Payment';
 import PaymentResult from './pages/PaymentResult';
 import VideoConsultation from './pages/VideoConsultation';
 import DoctorConsultations from './pages/DoctorConsultations';
+import AiDoctor from './pages/AiDoctor';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminAppointments from './pages/admin/AdminAppointments';
 import AdminDoctors from './pages/admin/AdminDoctors';
@@ -80,6 +81,7 @@ export default function App() {
                 <Route path="/labs/:id" element={<LabDetail />} />
                 <Route path="/deals" element={<Deals />} />
                 <Route path="/medicines" element={<Medicines />} />
+                <Route path="/ai-doctor" element={<AiDoctor />} />
                 <Route path="/cart" element={<Cart />} />
                 <Route path="/orders" element={<ProtectedRoute><MyOrders /></ProtectedRoute>} />
                 <Route path="/blog" element={<Blog />} />

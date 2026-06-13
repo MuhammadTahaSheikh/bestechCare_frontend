@@ -86,6 +86,36 @@ export const api = {
   getConsultationRoom: (id) => request(`/consultation/${id}`),
   getDoctorConsultations: () => request('/consultation/doctor/my'),
 
+  // AI Doctor
+  getAiDoctorStatus: () => request('/ai-doctor/status'),
+  createAiDoctorSession: (city) =>
+    request('/ai-doctor/sessions', { method: 'POST', body: JSON.stringify({ city }) }),
+  getAiDoctorSession: (id) => request(`/ai-doctor/sessions/${id}`),
+  sendAiDoctorMessage: (id, message) =>
+    request(`/ai-doctor/sessions/${id}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({ message }),
+    }),
+  completeAiDoctorSession: (id) =>
+    request(`/ai-doctor/sessions/${id}/complete`, { method: 'POST', body: JSON.stringify({}) }),
+  downloadAiDoctorPdf: async (id) => {
+    const token = localStorage.getItem('token');
+    const res = await fetch(`${API_BASE}/ai-doctor/sessions/${id}/pdf`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || 'Failed to download PDF');
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `bestechcare-ai-consultation-${id.slice(0, 8)}.pdf`;
+    a.click();
+    URL.revokeObjectURL(url);
+  },
+
   // Admin
   adminGetStats: () => request('/admin/stats'),
   adminGetAppointments: () => request('/admin/appointments'),
