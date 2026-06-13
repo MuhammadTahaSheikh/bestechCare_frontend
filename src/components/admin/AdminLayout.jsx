@@ -7,6 +7,7 @@ const links = [
   { to: '/admin/doctors', label: 'Doctors' },
   { to: '/admin/hospitals', label: 'Hospitals' },
   { to: '/admin/medicines', label: 'Medicines' },
+  { to: '/admin/labs', label: 'Labs & Tests' },
   { to: '/admin/orders', label: 'Orders' },
 ];
 

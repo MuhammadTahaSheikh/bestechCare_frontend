@@ -34,6 +34,7 @@ import AdminAppointments from './pages/admin/AdminAppointments';
 import AdminDoctors from './pages/admin/AdminDoctors';
 import AdminHospitals from './pages/admin/AdminHospitals';
 import AdminMedicines from './pages/admin/AdminMedicines';
+import AdminLabs from './pages/admin/AdminLabs';
 import AdminOrders from './pages/admin/AdminOrders';
 
 function MainLayout() {
@@ -65,6 +66,7 @@ export default function App() {
                 <Route path="doctors" element={<AdminDoctors />} />
                 <Route path="hospitals" element={<AdminHospitals />} />
                 <Route path="medicines" element={<AdminMedicines />} />
+                <Route path="labs" element={<AdminLabs />} />
                 <Route path="orders" element={<AdminOrders />} />
               </Route>
 

@@ -92,11 +92,21 @@ export const api = {
   adminUpdateAppointmentStatus: (id, status) =>
     request(`/admin/appointments/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
   adminGetDoctors: () => request('/admin/doctors'),
+  adminCreateDoctor: (body) =>
+    request('/admin/doctors', { method: 'POST', body: JSON.stringify(body) }),
   adminVerifyDoctor: (id, is_verified) =>
     request(`/admin/doctors/${id}/verify`, { method: 'PATCH', body: JSON.stringify({ is_verified }) }),
   adminGetHospitals: () => request('/admin/hospitals'),
+  adminCreateHospital: (body) =>
+    request('/admin/hospitals', { method: 'POST', body: JSON.stringify(body) }),
   adminVerifyHospital: (id, is_verified) =>
     request(`/admin/hospitals/${id}/verify`, { method: 'PATCH', body: JSON.stringify({ is_verified }) }),
+  adminGetLabs: () => request('/admin/labs'),
+  adminCreateLab: (body) =>
+    request('/admin/labs', { method: 'POST', body: JSON.stringify(body) }),
+  adminGetLabTests: () => request('/admin/lab-tests'),
+  adminCreateLabTest: (body) =>
+    request('/admin/lab-tests', { method: 'POST', body: JSON.stringify(body) }),
   adminGetOrders: () => request('/admin/orders'),
   adminUpdateOrderStatus: (id, status) =>
     request(`/admin/orders/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
