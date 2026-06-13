@@ -26,7 +26,13 @@ export function detectLanguageFromText(text) {
   if (/\barabic\b|speak arabic|in arabic/.test(lower)) return 'ar';
 
   const urduScore = ROMAN_URDU_MARKERS.filter((m) => lower.includes(` ${m} `) || lower.includes(m)).length;
-  if (urduScore >= 1) return 'ur';
+  const englishMarkers = [
+    'hello', 'hi ', 'hey', 'how are you', 'good morning', 'thank you', 'thanks',
+    'please', 'i have', 'i am', 'i feel', 'help me', 'what is',
+  ];
+  if (englishMarkers.some((m) => lower.includes(m)) && urduScore === 0) return 'en';
+  if (urduScore >= 1 && !englishMarkers.some((m) => lower.includes(m))) return 'ur';
+  if (/[a-zA-Z]/.test(text)) return 'en';
 
   return 'en';
 }
