@@ -183,7 +183,7 @@ export default function AiDoctor() {
 
         {!configured && (
           <div className="ai-doctor-error">
-            AI Doctor is not configured yet. An administrator needs to set <code>OPENAI_API_KEY</code> on the backend.
+            AI Doctor bot is starting or unavailable. Ensure the Python bot service is running on port 5003.
           </div>
         )}
 
