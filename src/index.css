@@ -2466,6 +2466,11 @@ a {
   margin-bottom: 16px;
 }
 
+.ai-doctor-doctors-inline {
+  margin-top: 12px;
+  margin-bottom: 0;
+}
+
 .ai-doctor-doctor-card {
   display: flex;
   flex-direction: column;

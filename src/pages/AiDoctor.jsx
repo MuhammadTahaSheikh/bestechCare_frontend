@@ -6,6 +6,11 @@ import { useAiDoctorVoice } from '../hooks/useAiDoctorVoice';
 
 const SESSION_KEY = 'ai_doctor_session_id';
 
+function assistantDisplayContent(msg) {
+  if (msg.role !== 'assistant' || !msg.recommended_doctors?.length) return msg.content;
+  return msg.content.split(/\n\n\*\*(Doctors on BestechCare|BestechCare par|BestechCare پر)/)[0].trim();
+}
+
 export default function AiDoctor() {
   const { city } = useCity();
   const [sessionId, setSessionId] = useState(null);
@@ -32,9 +37,19 @@ export default function AiDoctor() {
     setMessages((prev) => [...prev, { role: 'user', content: trimmed }]);
 
     try {
-      const { reply, language, voice_lang: replyVoiceLang } = await api.sendAiDoctorMessage(sessionId, trimmed);
-      setMessages((prev) => [...prev, { role: 'assistant', content: reply, language, voice_lang: replyVoiceLang }]);
-      return { language, voice_lang: replyVoiceLang, reply };
+      const { reply, language, voice_lang: replyVoiceLang, recommended_doctors: recommendedDoctors } =
+        await api.sendAiDoctorMessage(sessionId, trimmed);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: reply,
+          language,
+          voice_lang: replyVoiceLang,
+          recommended_doctors: recommendedDoctors || [],
+        },
+      ]);
+      return { language, voice_lang: replyVoiceLang, reply, recommended_doctors: recommendedDoctors || [] };
     } catch (err) {
       setError(err.message);
       setMessages((prev) => prev.slice(0, -1));
@@ -150,7 +165,10 @@ export default function AiDoctor() {
 
     lastSpokenRef.current = lastIdx;
     const replyLang = last.voice_lang || voiceLang;
-    speak(last.content, {
+    const speakText = last.recommended_doctors?.length
+      ? last.content.split(/\n\n\*\*(Doctors on BestechCare|BestechCare par|BestechCare پر)/)[0].trim()
+      : last.content;
+    speak(speakText, {
       lang: replyLang,
       onDone: () => {
         if (handsFree && voiceEnabled && !sending) {
@@ -346,7 +364,7 @@ export default function AiDoctor() {
                       <button
                         type="button"
                         className="ai-doctor-speak-btn"
-                        onClick={() => speak(msg.content, { lang: msg.voice_lang || voiceLang })}
+                        onClick={() => speak(assistantDisplayContent(msg), { lang: msg.voice_lang || voiceLang })}
                         title="Listen to this message"
                         aria-label="Play message audio"
                       >
@@ -354,7 +372,19 @@ export default function AiDoctor() {
                       </button>
                     )}
                   </span>
-                  <div className="ai-doctor-msg-content">{msg.content}</div>
+                  <div className="ai-doctor-msg-content">{assistantDisplayContent(msg)}</div>
+                  {msg.role === 'assistant' && msg.recommended_doctors?.length > 0 && (
+                    <div className="ai-doctor-doctors ai-doctor-doctors-inline">
+                      {msg.recommended_doctors.map((d) => (
+                        <Link key={d.id} to={`/doctors/${d.id}`} className="ai-doctor-doctor-card">
+                          <strong>{d.name}</strong>
+                          <span>{d.specialty_name}</span>
+                          {d.hospital_name && <span className="text-muted">{d.hospital_name}</span>}
+                          <span>★ {d.rating} · PKR {Number(d.consultation_fee).toLocaleString()}</span>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
               {sending && (
