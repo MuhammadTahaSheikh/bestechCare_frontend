@@ -32,12 +32,14 @@ export default function AiDoctor() {
     setMessages((prev) => [...prev, { role: 'user', content: trimmed }]);
 
     try {
-      const { reply } = await api.sendAiDoctorMessage(sessionId, trimmed);
-      setMessages((prev) => [...prev, { role: 'assistant', content: reply }]);
+      const { reply, language, voice_lang: replyVoiceLang } = await api.sendAiDoctorMessage(sessionId, trimmed);
+      setMessages((prev) => [...prev, { role: 'assistant', content: reply, language, voice_lang: replyVoiceLang }]);
+      return { language, voice_lang: replyVoiceLang, reply };
     } catch (err) {
       setError(err.message);
       setMessages((prev) => prev.slice(0, -1));
       setInput(trimmed);
+      return null;
     } finally {
       setSending(false);
     }
@@ -45,10 +47,15 @@ export default function AiDoctor() {
 
   sendMessageRef.current = sendMessage;
 
-  const handleVoiceTranscript = useCallback((text) => {
+  const handleVoiceTranscript = useCallback(async (text) => {
     setInput(text);
-    sendMessageRef.current?.(text);
+    const result = await sendMessageRef.current?.(text);
+    if (result) {
+      syncReplyLanguageRef.current?.(result.language, result.voice_lang);
+    }
   }, []);
+
+  const syncReplyLanguageRef = useRef(null);
 
   const voiceEnabled = configured && !summary && !loading;
   const {
@@ -60,13 +67,18 @@ export default function AiDoctor() {
     handsFree,
     setHandsFree,
     interimText,
+    conversationLang,
     voiceLang,
-    setVoiceLang,
+    langMode,
+    setManualVoiceLang,
+    syncReplyLanguage,
     toggleListening,
     speak,
     stopSpeaking,
     startListening,
   } = useAiDoctorVoice({ onTranscript: handleVoiceTranscript, enabled: voiceEnabled });
+
+  syncReplyLanguageRef.current = syncReplyLanguage;
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -107,8 +119,16 @@ export default function AiDoctor() {
         if (cancelled) return;
         sessionStorage.setItem(SESSION_KEY, session.id);
         setSessionId(session.id);
-        setMessages([{ role: 'assistant', content: session.message }]);
+        setMessages([{
+          role: 'assistant',
+          content: session.message,
+          language: session.language,
+          voice_lang: session.voice_lang,
+        }]);
         lastSpokenRef.current = -1;
+        if (session.language) {
+          syncReplyLanguageRef.current?.(session.language, session.voice_lang);
+        }
       } catch (err) {
         if (!cancelled) setError(err.message);
       } finally {
@@ -129,18 +149,21 @@ export default function AiDoctor() {
     if (lastIdx <= lastSpokenRef.current) return;
 
     lastSpokenRef.current = lastIdx;
+    const replyLang = last.voice_lang || voiceLang;
     speak(last.content, {
+      lang: replyLang,
       onDone: () => {
         if (handsFree && voiceEnabled && !sending) {
-          setTimeout(() => startListening(), 400);
+          setTimeout(() => startListening(), 500);
         }
       },
     });
-  }, [messages, voiceReplies, sending, summary, speak, handsFree, voiceEnabled, startListening]);
+  }, [messages, voiceReplies, sending, summary, speak, handsFree, voiceEnabled, startListening, voiceLang]);
 
-  const handleSend = (e) => {
+  const handleSend = async (e) => {
     e.preventDefault();
-    sendMessage(input);
+    const result = await sendMessage(input);
+    if (result) syncReplyLanguage(result.language, result.voice_lang);
   };
 
   const handleComplete = async () => {
@@ -155,7 +178,8 @@ export default function AiDoctor() {
       setDoctors(result.recommended_doctors || []);
       sessionStorage.removeItem(SESSION_KEY);
       if (voiceReplies && result.summary?.summary) {
-        speak(`Consultation complete. ${result.summary.summary}`);
+        const vLang = result.summary.voice_lang || voiceLang;
+        speak(`Consultation complete. ${result.summary.summary}`, { lang: vLang });
       }
     } catch (err) {
       setError(err.message);
@@ -286,13 +310,19 @@ export default function AiDoctor() {
                   </label>
                   <select
                     className="ai-doctor-voice-lang"
-                    value={voiceLang}
-                    onChange={(e) => setVoiceLang(e.target.value)}
+                    value={langMode === 'auto' ? 'auto' : voiceLang}
+                    onChange={(e) => setManualVoiceLang(e.target.value)}
                     aria-label="Voice language"
                   >
+                    <option value="auto">Auto detect</option>
                     <option value="en-US">English</option>
                     <option value="ur-PK">Urdu</option>
+                    <option value="hi-IN">Hindi</option>
+                    <option value="ar-SA">Arabic</option>
                   </select>
+                  <span className="ai-doctor-lang-badge">
+                    {conversationLang === 'ur' ? 'اردو' : conversationLang === 'hi' ? 'हिंदी' : conversationLang === 'ar' ? 'العربية' : 'EN'}
+                  </span>
                 </div>
               </div>
             )}
@@ -316,7 +346,7 @@ export default function AiDoctor() {
                       <button
                         type="button"
                         className="ai-doctor-speak-btn"
-                        onClick={() => speak(msg.content)}
+                        onClick={() => speak(msg.content, { lang: msg.voice_lang || voiceLang })}
                         title="Listen to this message"
                         aria-label="Play message audio"
                       >

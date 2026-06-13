@@ -2583,6 +2583,16 @@ a {
   background: var(--white);
 }
 
+.ai-doctor-lang-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--primary-dark);
+  background: var(--white);
+  border: 1px solid var(--primary);
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+
 .ai-doctor-voice-hint {
   padding: 10px 16px;
   font-size: 0.85rem;

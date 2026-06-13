@@ -1,38 +1,52 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  detectLanguageFromText,
+  pickSpeechVoice,
+  stripForSpeech,
+  voiceLangFor,
+} from '../utils/languageUtils';
 
 const SpeechRecognition =
   typeof window !== 'undefined'
     ? window.SpeechRecognition || window.webkitSpeechRecognition
     : null;
 
-function stripForSpeech(text) {
-  return text
-    .replace(/\*\*/g, '')
-    .replace(/🚨/g, '')
-    .replace(/⚠️/g, '')
-    .replace(/•/g, '')
-    .replace(/\n+/g, '. ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-export function useAiDoctorVoice({ onTranscript, enabled = true }) {
+export function useAiDoctorVoice({ onTranscript, enabled = true, onLanguageDetected }) {
   const [voiceSupported] = useState(() => Boolean(SpeechRecognition && window.speechSynthesis));
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [voiceReplies, setVoiceReplies] = useState(true);
   const [handsFree, setHandsFree] = useState(false);
   const [interimText, setInterimText] = useState('');
+  const [conversationLang, setConversationLang] = useState('en');
   const [voiceLang, setVoiceLang] = useState('en-US');
+  const [langMode, setLangMode] = useState('auto');
 
   const recognitionRef = useRef(null);
   const onTranscriptRef = useRef(onTranscript);
+  const onLanguageDetectedRef = useRef(onLanguageDetected);
   const handsFreeRef = useRef(handsFree);
   const enabledRef = useRef(enabled);
+  const voiceLangRef = useRef(voiceLang);
+  const langModeRef = useRef(langMode);
 
   onTranscriptRef.current = onTranscript;
+  onLanguageDetectedRef.current = onLanguageDetected;
   handsFreeRef.current = handsFree;
   enabledRef.current = enabled;
+  voiceLangRef.current = voiceLang;
+  langModeRef.current = langMode;
+
+  const applyLanguage = useCallback((lang) => {
+    const code = lang || 'en';
+    setConversationLang(code);
+    if (langModeRef.current === 'auto') {
+      const vLang = voiceLangFor(code);
+      setVoiceLang(vLang);
+      voiceLangRef.current = vLang;
+    }
+    onLanguageDetectedRef.current?.(code, voiceLangFor(code));
+  }, []);
 
   const stopSpeaking = useCallback(() => {
     window.speechSynthesis?.cancel();
@@ -40,21 +54,22 @@ export function useAiDoctorVoice({ onTranscript, enabled = true }) {
   }, []);
 
   const speak = useCallback(
-    (text, { onDone } = {}) => {
+    (text, { onDone, lang } = {}) => {
       if (!window.speechSynthesis || !text?.trim()) {
         onDone?.();
         return;
       }
 
+      const speakLang = lang || voiceLangRef.current;
+
       stopSpeaking();
       const utterance = new SpeechSynthesisUtterance(stripForSpeech(text));
-      utterance.lang = voiceLang;
-      utterance.rate = 0.95;
+      utterance.lang = speakLang;
+      utterance.rate = speakLang.startsWith('ur') ? 0.9 : 0.95;
       utterance.pitch = 1;
 
-      const voices = window.speechSynthesis.getVoices();
-      const preferred = voices.find((v) => v.lang.startsWith(voiceLang.slice(0, 2)));
-      if (preferred) utterance.voice = preferred;
+      const voice = pickSpeechVoice(speakLang);
+      if (voice) utterance.voice = voice;
 
       utterance.onstart = () => setIsSpeaking(true);
       utterance.onend = () => {
@@ -68,11 +83,15 @@ export function useAiDoctorVoice({ onTranscript, enabled = true }) {
 
       window.speechSynthesis.speak(utterance);
     },
-    [stopSpeaking, voiceLang]
+    [stopSpeaking]
   );
 
   const stopListening = useCallback(() => {
-    recognitionRef.current?.stop();
+    try {
+      recognitionRef.current?.stop();
+    } catch {
+      /* ignore */
+    }
     setIsListening(false);
     setInterimText('');
   }, []);
@@ -84,7 +103,7 @@ export function useAiDoctorVoice({ onTranscript, enabled = true }) {
     stopListening();
 
     const recognition = new SpeechRecognition();
-    recognition.lang = voiceLang;
+    recognition.lang = voiceLangRef.current;
     recognition.continuous = false;
     recognition.interimResults = true;
     recognition.maxAlternatives = 1;
@@ -107,10 +126,17 @@ export function useAiDoctorVoice({ onTranscript, enabled = true }) {
         }
       }
 
-      setInterimText(interim || finalText);
+      const preview = interim || finalText;
+      setInterimText(preview);
+
+      if (preview && langModeRef.current === 'auto') {
+        applyLanguage(detectLanguageFromText(preview));
+      }
 
       if (finalText.trim()) {
-        onTranscriptRef.current?.(finalText.trim());
+        const detected = detectLanguageFromText(finalText);
+        applyLanguage(detected);
+        onTranscriptRef.current?.(finalText.trim(), detected, voiceLangFor(detected));
         setInterimText('');
       }
     };
@@ -135,14 +161,31 @@ export function useAiDoctorVoice({ onTranscript, enabled = true }) {
     } catch {
       setIsListening(false);
     }
-  }, [stopListening, stopSpeaking, voiceLang]);
+  }, [applyLanguage, stopListening, stopSpeaking]);
+
+  const setManualVoiceLang = useCallback((value) => {
+    setLangMode(value === 'auto' ? 'auto' : 'manual');
+    if (value === 'auto') {
+      const vLang = voiceLangFor(conversationLang);
+      setVoiceLang(vLang);
+      voiceLangRef.current = vLang;
+    } else {
+      setVoiceLang(value);
+      voiceLangRef.current = value;
+    }
+  }, [conversationLang]);
+
+  const syncReplyLanguage = useCallback((language, replyVoiceLang) => {
+    applyLanguage(language || 'en');
+    if (langModeRef.current === 'auto' && replyVoiceLang) {
+      setVoiceLang(replyVoiceLang);
+      voiceLangRef.current = replyVoiceLang;
+    }
+  }, [applyLanguage]);
 
   const toggleListening = useCallback(() => {
-    if (isListening) {
-      stopListening();
-    } else {
-      startListening();
-    }
+    if (isListening) stopListening();
+    else startListening();
   }, [isListening, startListening, stopListening]);
 
   useEffect(() => {
@@ -165,8 +208,12 @@ export function useAiDoctorVoice({ onTranscript, enabled = true }) {
     handsFree,
     setHandsFree,
     interimText,
+    conversationLang,
     voiceLang,
-    setVoiceLang,
+    langMode,
+    setManualVoiceLang,
+    syncReplyLanguage,
+    applyLanguage,
     startListening,
     stopListening,
     toggleListening,
