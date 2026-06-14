@@ -88,8 +88,16 @@ export const api = {
 
   // AI Doctor
   getAiDoctorStatus: () => request('/ai-doctor/status'),
-  createAiDoctorSession: (city) =>
-    request('/ai-doctor/sessions', { method: 'POST', body: JSON.stringify({ city }) }),
+  createAiDoctorSession: (city, prefs = {}) =>
+    request('/ai-doctor/sessions', {
+      method: 'POST',
+      body: JSON.stringify({
+        city,
+        doctor_gender: prefs.doctorGender || 'male',
+        preferred_language: prefs.preferredLanguage || 'en',
+        roman_urdu: Boolean(prefs.romanUrdu),
+      }),
+    }),
   getAiDoctorSession: (id) => request(`/ai-doctor/sessions/${id}`),
   sendAiDoctorMessage: (id, message) =>
     request(`/ai-doctor/sessions/${id}/messages`, {

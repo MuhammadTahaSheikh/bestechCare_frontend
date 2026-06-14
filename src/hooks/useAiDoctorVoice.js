@@ -14,16 +14,24 @@ const SpeechRecognition =
     ? window.SpeechRecognition || window.webkitSpeechRecognition
     : null;
 
-export function useAiDoctorVoice({ onTranscript, enabled = true, onLanguageDetected }) {
+export function useAiDoctorVoice({
+  onTranscript,
+  enabled = true,
+  onLanguageDetected,
+  initialLanguage = null,
+  initialVoiceLang = null,
+  doctorGender = 'male',
+  lockLanguage = false,
+}) {
   const [voiceSupported] = useState(() => Boolean(SpeechRecognition && window.speechSynthesis));
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [voiceReplies, setVoiceReplies] = useState(true);
   const [handsFree, setHandsFree] = useState(false);
   const [interimText, setInterimText] = useState('');
-  const [conversationLang, setConversationLang] = useState('en');
-  const [voiceLang, setVoiceLang] = useState('en-US');
-  const [langMode, setLangMode] = useState('auto');
+  const [conversationLang, setConversationLang] = useState(initialLanguage || 'en');
+  const [voiceLang, setVoiceLang] = useState(initialVoiceLang || voiceLangFor(initialLanguage || 'en'));
+  const [langMode, setLangMode] = useState(lockLanguage || initialLanguage ? 'manual' : 'auto');
 
   const recognitionRef = useRef(null);
   const onTranscriptRef = useRef(onTranscript);
@@ -32,6 +40,8 @@ export function useAiDoctorVoice({ onTranscript, enabled = true, onLanguageDetec
   const enabledRef = useRef(enabled);
   const voiceLangRef = useRef(voiceLang);
   const langModeRef = useRef(langMode);
+  const lockLanguageRef = useRef(lockLanguage);
+  const doctorGenderRef = useRef(doctorGender);
 
   onTranscriptRef.current = onTranscript;
   onLanguageDetectedRef.current = onLanguageDetected;
@@ -39,8 +49,11 @@ export function useAiDoctorVoice({ onTranscript, enabled = true, onLanguageDetec
   enabledRef.current = enabled;
   voiceLangRef.current = voiceLang;
   langModeRef.current = langMode;
+  lockLanguageRef.current = lockLanguage;
+  doctorGenderRef.current = doctorGender;
 
   const applyLanguage = useCallback((lang) => {
+    if (lockLanguageRef.current) return;
     const code = lang || 'en';
     setConversationLang(code);
     if (langModeRef.current === 'auto') {
@@ -49,6 +62,16 @@ export function useAiDoctorVoice({ onTranscript, enabled = true, onLanguageDetec
       voiceLangRef.current = vLang;
     }
     onLanguageDetectedRef.current?.(code, voiceLangFor(code));
+  }, []);
+
+  const setPreferredLanguage = useCallback((language, replyVoiceLang) => {
+    const code = language || 'en';
+    setConversationLang(code);
+    setLangMode('manual');
+    langModeRef.current = 'manual';
+    const vLang = replyVoiceLang || voiceLangFor(code);
+    setVoiceLang(vLang);
+    voiceLangRef.current = vLang;
   }, []);
 
   const stopSpeaking = useCallback(() => {
@@ -77,9 +100,12 @@ export function useAiDoctorVoice({ onTranscript, enabled = true, onLanguageDetec
       const utterance = new SpeechSynthesisUtterance(speechText);
       utterance.lang = utteranceLang;
       utterance.rate = useRomanUrdu || utteranceLang.startsWith('ur') ? 0.88 : 0.95;
-      utterance.pitch = 1;
+      utterance.pitch = doctorGenderRef.current === 'female' ? 1.08 : 0.92;
 
-      const voice = pickSpeechVoice(utteranceLang, { forRomanUrdu: useRomanUrdu });
+      const voice = pickSpeechVoice(utteranceLang, {
+        forRomanUrdu: useRomanUrdu,
+        preferFemale: doctorGenderRef.current === 'female',
+      });
       if (voice) utterance.voice = voice;
 
       utterance.onstart = () => setIsSpeaking(true);
@@ -140,14 +166,18 @@ export function useAiDoctorVoice({ onTranscript, enabled = true, onLanguageDetec
       const preview = interim || finalText;
       setInterimText(preview);
 
-      if (preview && langModeRef.current === 'auto') {
+      if (preview && langModeRef.current === 'auto' && !lockLanguageRef.current) {
         applyLanguage(detectLanguageFromText(preview));
       }
 
       if (finalText.trim()) {
-        const detected = detectLanguageFromText(finalText);
-        applyLanguage(detected);
-        onTranscriptRef.current?.(finalText.trim(), detected, voiceLangFor(detected));
+        const detected = lockLanguageRef.current
+          ? conversationLang
+          : detectLanguageFromText(finalText);
+        if (!lockLanguageRef.current) {
+          applyLanguage(detected);
+        }
+        onTranscriptRef.current?.(finalText.trim(), detected, voiceLangRef.current);
         setInterimText('');
       }
     };
@@ -172,21 +202,10 @@ export function useAiDoctorVoice({ onTranscript, enabled = true, onLanguageDetec
     } catch {
       setIsListening(false);
     }
-  }, [applyLanguage, stopListening, stopSpeaking]);
-
-  const setManualVoiceLang = useCallback((value) => {
-    setLangMode(value === 'auto' ? 'auto' : 'manual');
-    if (value === 'auto') {
-      const vLang = voiceLangFor(conversationLang);
-      setVoiceLang(vLang);
-      voiceLangRef.current = vLang;
-    } else {
-      setVoiceLang(value);
-      voiceLangRef.current = value;
-    }
-  }, [conversationLang]);
+  }, [applyLanguage, conversationLang, stopListening, stopSpeaking]);
 
   const syncReplyLanguage = useCallback((language, replyVoiceLang) => {
+    if (lockLanguageRef.current) return;
     applyLanguage(language || 'en');
     if (langModeRef.current === 'auto' && replyVoiceLang) {
       setVoiceLang(replyVoiceLang);
@@ -200,12 +219,28 @@ export function useAiDoctorVoice({ onTranscript, enabled = true, onLanguageDetec
   }, [isListening, startListening, stopListening]);
 
   useEffect(() => {
+    if (!initialLanguage) return;
+    setPreferredLanguage(initialLanguage, initialVoiceLang);
+  }, [initialLanguage, initialVoiceLang, setPreferredLanguage]);
+
+  useEffect(() => {
+    doctorGenderRef.current = doctorGender;
+  }, [doctorGender]);
+
+  useEffect(() => {
+    lockLanguageRef.current = lockLanguage;
+    if (lockLanguage) {
+      setLangMode('manual');
+      langModeRef.current = 'manual';
+    }
+  }, [lockLanguage]);
+
+  useEffect(() => {
     const loadVoices = () => {
       window.speechSynthesis?.getVoices();
     };
     loadVoices();
     window.speechSynthesis?.addEventListener('voiceschanged', loadVoices);
-    // Chrome loads voices async — retry once
     const t = setTimeout(loadVoices, 500);
     return () => {
       clearTimeout(t);
@@ -227,8 +262,8 @@ export function useAiDoctorVoice({ onTranscript, enabled = true, onLanguageDetec
     conversationLang,
     voiceLang,
     langMode,
-    setManualVoiceLang,
     syncReplyLanguage,
+    applySessionLanguage: setPreferredLanguage,
     applyLanguage,
     startListening,
     stopListening,

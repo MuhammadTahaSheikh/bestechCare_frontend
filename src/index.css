@@ -2492,6 +2492,85 @@ a {
   flex-wrap: wrap;
 }
 
+.ai-doctor-setup {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.ai-doctor-setup h2 {
+  margin-bottom: 8px;
+  color: var(--primary-dark);
+}
+
+.ai-doctor-setup-note {
+  margin-bottom: 24px;
+}
+
+.ai-doctor-setup-back {
+  border: none;
+  background: none;
+  color: var(--primary);
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 16px;
+}
+
+.ai-doctor-setup-back:hover {
+  text-decoration: underline;
+}
+
+.ai-doctor-setup-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.ai-doctor-setup-grid-lang {
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.ai-doctor-setup-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 28px 20px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--white);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.2s;
+  text-align: center;
+}
+
+.ai-doctor-setup-card:hover:not(:disabled) {
+  border-color: var(--primary);
+  transform: translateY(-2px);
+}
+
+.ai-doctor-setup-card:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ai-doctor-setup-card-lang {
+  padding: 20px 16px;
+}
+
+.ai-doctor-setup-icon {
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+.ai-doctor-session-meta {
+  margin-top: 6px;
+  font-size: 0.9rem;
+  color: var(--primary-dark);
+  font-weight: 600;
+}
+
 @media (min-width: 992px) {
   .ai-doctor-layout {
     grid-template-columns: 1.2fr 0.8fr;
@@ -2659,6 +2738,10 @@ a {
 }
 
 @media (max-width: 640px) {
+  .ai-doctor-setup-grid {
+    grid-template-columns: 1fr;
+  }
+
   .ai-doctor-voice-bar {
     flex-direction: column;
     align-items: stretch;

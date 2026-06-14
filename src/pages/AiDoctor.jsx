@@ -3,12 +3,32 @@ import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import { useCity } from '../context/CityContext';
 import { useAiDoctorVoice } from '../hooks/useAiDoctorVoice';
+import { voiceLangFor } from '../utils/languageUtils';
 
 const SESSION_KEY = 'ai_doctor_session_id';
+
+const LANGUAGE_OPTIONS = [
+  { id: 'en', label: 'English', native: 'English' },
+  { id: 'ur', label: 'Urdu', native: 'اردو' },
+  { id: 'ur-roman', label: 'Urdu (Roman)', native: 'Roman Urdu', language: 'ur', roman: true },
+  { id: 'hi', label: 'Hindi', native: 'हिंदी' },
+  { id: 'ar', label: 'Arabic', native: 'العربية' },
+];
+
+const LANG_LABELS = {
+  en: 'English',
+  ur: 'اردو',
+  hi: 'हिंदी',
+  ar: 'العربية',
+};
 
 function assistantDisplayContent(msg) {
   if (msg.role !== 'assistant' || !msg.recommended_doctors?.length) return msg.content;
   return msg.content.split(/\n\n\*\*(Doctors on BestechCare|BestechCare par|BestechCare پر)/)[0].trim();
+}
+
+function doctorLabel(gender) {
+  return gender === 'female' ? 'AI Doctor (Female)' : 'AI Doctor (Male)';
 }
 
 export default function AiDoctor() {
@@ -23,9 +43,17 @@ export default function AiDoctor() {
   const [summary, setSummary] = useState(null);
   const [doctors, setDoctors] = useState([]);
   const [error, setError] = useState('');
+  const [setupStep, setSetupStep] = useState(null);
+  const [doctorGender, setDoctorGender] = useState(null);
+  const [preferredLanguage, setPreferredLanguage] = useState(null);
+  const [romanUrdu, setRomanUrdu] = useState(false);
+  const [sessionVoiceLang, setSessionVoiceLang] = useState(null);
   const chatEndRef = useRef(null);
   const lastSpokenRef = useRef(-1);
   const sendMessageRef = useRef(null);
+  const syncReplyLanguageRef = useRef(null);
+
+  const chatReady = Boolean(sessionId && setupStep === null);
 
   const sendMessage = useCallback(async (text) => {
     const trimmed = text?.trim();
@@ -64,15 +92,10 @@ export default function AiDoctor() {
 
   const handleVoiceTranscript = useCallback(async (text) => {
     setInput(text);
-    const result = await sendMessageRef.current?.(text);
-    if (result) {
-      syncReplyLanguageRef.current?.(result.language, result.voice_lang);
-    }
+    await sendMessageRef.current?.(text);
   }, []);
 
-  const syncReplyLanguageRef = useRef(null);
-
-  const voiceEnabled = configured && !summary && !loading;
+  const voiceEnabled = configured && !summary && chatReady;
   const {
     voiceSupported,
     isListening,
@@ -84,16 +107,56 @@ export default function AiDoctor() {
     interimText,
     conversationLang,
     voiceLang,
-    langMode,
-    setManualVoiceLang,
     syncReplyLanguage,
+    applySessionLanguage,
     toggleListening,
     speak,
     stopSpeaking,
     startListening,
-  } = useAiDoctorVoice({ onTranscript: handleVoiceTranscript, enabled: voiceEnabled });
+  } = useAiDoctorVoice({
+    onTranscript: handleVoiceTranscript,
+    enabled: voiceEnabled,
+    initialLanguage: preferredLanguage,
+    initialVoiceLang: sessionVoiceLang,
+    doctorGender: doctorGender || 'male',
+    lockLanguage: Boolean(preferredLanguage),
+  });
 
   syncReplyLanguageRef.current = syncReplyLanguage;
+
+  const beginSession = useCallback(async (gender, language, roman) => {
+    setLoading(true);
+    setError('');
+    setSetupStep(null);
+
+    try {
+      const session = await api.createAiDoctorSession(city, {
+        doctorGender: gender,
+        preferredLanguage: language,
+        romanUrdu: roman,
+      });
+      sessionStorage.setItem(SESSION_KEY, session.id);
+      setSessionId(session.id);
+      setDoctorGender(session.doctor_gender || gender);
+      setPreferredLanguage(session.preferred_language || language);
+      setRomanUrdu(Boolean(session.roman_urdu ?? roman));
+      setSessionVoiceLang(session.voice_lang || voiceLangFor(language));
+      applySessionLanguage(session.preferred_language || language, session.voice_lang);
+      setMessages([{
+        role: 'assistant',
+        content: session.message,
+        language: session.language,
+        voice_lang: session.voice_lang,
+      }]);
+      lastSpokenRef.current = -1;
+    } catch (err) {
+      setError(err.message);
+      setSetupStep('gender');
+      setDoctorGender(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [city, applySessionLanguage]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -121,7 +184,12 @@ export default function AiDoctor() {
             if (session.status === 'active') {
               setSessionId(savedId);
               setMessages(session.messages || []);
+              setDoctorGender(session.doctor_gender || 'male');
+              setPreferredLanguage(session.preferred_language || 'en');
+              setRomanUrdu(Boolean(session.roman_urdu));
+              setSessionVoiceLang(voiceLangFor(session.preferred_language || 'en'));
               lastSpokenRef.current = Math.max(0, (session.messages?.length || 1) - 1);
+              setSetupStep(null);
               setLoading(false);
               return;
             }
@@ -130,20 +198,7 @@ export default function AiDoctor() {
           }
         }
 
-        const session = await api.createAiDoctorSession(city);
-        if (cancelled) return;
-        sessionStorage.setItem(SESSION_KEY, session.id);
-        setSessionId(session.id);
-        setMessages([{
-          role: 'assistant',
-          content: session.message,
-          language: session.language,
-          voice_lang: session.voice_lang,
-        }]);
-        lastSpokenRef.current = -1;
-        if (session.language) {
-          syncReplyLanguageRef.current?.(session.language, session.voice_lang);
-        }
+        setSetupStep('gender');
       } catch (err) {
         if (!cancelled) setError(err.message);
       } finally {
@@ -156,7 +211,7 @@ export default function AiDoctor() {
   }, [city]);
 
   useEffect(() => {
-    if (!voiceReplies || sending || summary) return;
+    if (!voiceReplies || sending || summary || !chatReady) return;
 
     const lastIdx = messages.length - 1;
     const last = messages[lastIdx];
@@ -176,12 +231,11 @@ export default function AiDoctor() {
         }
       },
     });
-  }, [messages, voiceReplies, sending, summary, speak, handsFree, voiceEnabled, startListening, voiceLang]);
+  }, [messages, voiceReplies, sending, summary, speak, handsFree, voiceEnabled, startListening, voiceLang, chatReady]);
 
   const handleSend = async (e) => {
     e.preventDefault();
-    const result = await sendMessage(input);
-    if (result) syncReplyLanguage(result.language, result.voice_lang);
+    await sendMessage(input);
   };
 
   const handleComplete = async () => {
@@ -206,38 +260,136 @@ export default function AiDoctor() {
     }
   };
 
-  const handleNewConsultation = async () => {
+  const handleNewConsultation = () => {
     stopSpeaking();
-    setLoading(true);
     setSummary(null);
     setDoctors([]);
     setError('');
+    setSessionId(null);
+    setMessages([]);
+    setDoctorGender(null);
+    setPreferredLanguage(null);
+    setRomanUrdu(false);
+    setSessionVoiceLang(null);
     lastSpokenRef.current = -1;
     sessionStorage.removeItem(SESSION_KEY);
-
-    try {
-      const session = await api.createAiDoctorSession(city);
-      sessionStorage.setItem(SESSION_KEY, session.id);
-      setSessionId(session.id);
-      setMessages([{ role: 'assistant', content: session.message }]);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+    setSetupStep('gender');
   };
 
   const handleDownloadPdf = () => {
     if (sessionId) api.downloadAiDoctorPdf(sessionId);
   };
 
+  const handleGenderSelect = (gender) => {
+    setDoctorGender(gender);
+    setSetupStep('language');
+    setError('');
+  };
+
+  const handleLanguageSelect = (option) => {
+    const language = option.language || option.id;
+    const roman = Boolean(option.roman);
+    beginSession(doctorGender, language, roman);
+  };
+
   const userMessageCount = messages.filter((m) => m.role === 'user').length;
+  const languageLabel = romanUrdu ? 'Roman Urdu' : (LANG_LABELS[preferredLanguage] || 'English');
 
   if (loading) {
     return (
       <div className="page">
         <div className="container">
           <p className="loading">Starting AI Doctor consultation...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (setupStep) {
+    return (
+      <div className="page ai-doctor-page">
+        <div className="container">
+          <div className="page-header">
+            <div>
+              <h1>AI Doctor</h1>
+              <p className="text-muted">
+                {setupStep === 'gender'
+                  ? 'Step 1 of 2 — Choose your AI doctor'
+                  : 'Step 2 of 2 — Choose your language'}
+              </p>
+            </div>
+          </div>
+
+          <div className="ai-doctor-disclaimer">
+            <strong>Medical disclaimer:</strong> This AI assistant provides general health information only.
+            It is not a licensed physician and cannot diagnose or prescribe.
+          </div>
+
+          {!configured && (
+            <div className="ai-doctor-error">
+              AI Doctor bot is starting or unavailable. Ensure the Python bot service is running on port 5003.
+            </div>
+          )}
+
+          {error && <div className="ai-doctor-error">{error}</div>}
+
+          {setupStep === 'gender' && (
+            <div className="ai-doctor-setup">
+              <h2>Who would you like to consult with?</h2>
+              <div className="ai-doctor-setup-grid">
+                <button
+                  type="button"
+                  className="ai-doctor-setup-card"
+                  onClick={() => handleGenderSelect('male')}
+                  disabled={!configured}
+                >
+                  <span className="ai-doctor-setup-icon">👨‍⚕️</span>
+                  <strong>Male Doctor</strong>
+                  <span className="text-muted">AI health assistant (male voice)</span>
+                </button>
+                <button
+                  type="button"
+                  className="ai-doctor-setup-card"
+                  onClick={() => handleGenderSelect('female')}
+                  disabled={!configured}
+                >
+                  <span className="ai-doctor-setup-icon">👩‍⚕️</span>
+                  <strong>Female Doctor</strong>
+                  <span className="text-muted">AI health assistant (female voice)</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {setupStep === 'language' && (
+            <div className="ai-doctor-setup">
+              <button
+                type="button"
+                className="ai-doctor-setup-back"
+                onClick={() => setSetupStep('gender')}
+              >
+                ← Back to doctor selection
+              </button>
+              <h2>Which language should the doctor use?</h2>
+              <p className="text-muted ai-doctor-setup-note">
+                The AI doctor will reply in your chosen language for this consultation.
+              </p>
+              <div className="ai-doctor-setup-grid ai-doctor-setup-grid-lang">
+                {LANGUAGE_OPTIONS.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    className="ai-doctor-setup-card ai-doctor-setup-card-lang"
+                    onClick={() => handleLanguageSelect(option)}
+                    disabled={!configured}
+                  >
+                    <strong>{option.label}</strong>
+                    <span>{option.native}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -252,6 +404,11 @@ export default function AiDoctor() {
             <p className="text-muted">
               Chat by text or voice — always consult a real doctor for diagnosis and treatment.
             </p>
+            {doctorGender && preferredLanguage && (
+              <p className="ai-doctor-session-meta">
+                {doctorLabel(doctorGender)} · {languageLabel}
+              </p>
+            )}
           </div>
           {!summary && userMessageCount > 0 && (
             <button
@@ -326,20 +483,8 @@ export default function AiDoctor() {
                     />
                     Hands-free
                   </label>
-                  <select
-                    className="ai-doctor-voice-lang"
-                    value={langMode === 'auto' ? 'auto' : voiceLang}
-                    onChange={(e) => setManualVoiceLang(e.target.value)}
-                    aria-label="Voice language"
-                  >
-                    <option value="auto">Auto detect</option>
-                    <option value="en-US">English</option>
-                    <option value="ur-PK">Urdu</option>
-                    <option value="hi-IN">Hindi</option>
-                    <option value="ar-SA">Arabic</option>
-                  </select>
-                  <span className="ai-doctor-lang-badge">
-                    {conversationLang === 'ur' ? 'اردو' : conversationLang === 'hi' ? 'हिंदी' : conversationLang === 'ar' ? 'العربية' : 'EN'}
+                  <span className="ai-doctor-lang-badge" title="Selected consultation language">
+                    {languageLabel}
                   </span>
                 </div>
               </div>
@@ -359,7 +504,7 @@ export default function AiDoctor() {
               {messages.map((msg, i) => (
                 <div key={i} className={`ai-doctor-msg ai-doctor-msg-${msg.role}`}>
                   <span className="ai-doctor-msg-label">
-                    {msg.role === 'user' ? 'You' : 'AI Doctor'}
+                    {msg.role === 'user' ? 'You' : doctorLabel(doctorGender)}
                     {msg.role === 'assistant' && voiceSupported && (
                       <button
                         type="button"
@@ -389,7 +534,7 @@ export default function AiDoctor() {
               ))}
               {sending && (
                 <div className="ai-doctor-msg ai-doctor-msg-assistant">
-                  <span className="ai-doctor-msg-label">AI Doctor</span>
+                  <span className="ai-doctor-msg-label">{doctorLabel(doctorGender)}</span>
                   <div className="ai-doctor-msg-content ai-doctor-typing">Thinking...</div>
                 </div>
               )}
@@ -402,7 +547,7 @@ export default function AiDoctor() {
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder="Type or tap the microphone to speak..."
+                  placeholder="Describe your symptoms..."
                   disabled={sending || !sessionId}
                 />
                 {voiceSupported && (

@@ -72,14 +72,23 @@ export function hasNativeUrduVoice() {
   );
 }
 
-export function pickSpeechVoice(preferredLang, { forRomanUrdu = false } = {}) {
+export function pickSpeechVoice(preferredLang, { forRomanUrdu = false, preferFemale = false } = {}) {
   const voices = getSpeechVoices();
   if (!voices.length) return null;
 
   const code = preferredLang.slice(0, 2);
 
+  const genderMatch = (voice) => {
+    const name = voice.name.toLowerCase();
+    if (preferFemale) {
+      return /female|woman|zira|samantha|karen|veena|fiona|moira|tessa|susan|victoria/.test(name);
+    }
+    return /male|man|david|mark|daniel|james|alex|rishi|tom/.test(name);
+  };
+
   if (forRomanUrdu) {
     return (
+      voices.find((v) => genderMatch(v) && (v.lang === 'hi-IN' || v.name.toLowerCase().includes('hindi'))) ||
       voices.find((v) => v.lang === 'hi-IN') ||
       voices.find((v) => v.name.toLowerCase().includes('hindi')) ||
       voices.find((v) => v.lang === 'en-IN') ||
@@ -89,6 +98,7 @@ export function pickSpeechVoice(preferredLang, { forRomanUrdu = false } = {}) {
 
   if (code === 'ur') {
     const urduVoice =
+      voices.find((v) => genderMatch(v) && (v.lang === 'ur-PK' || v.name.toLowerCase().includes('urdu'))) ||
       voices.find((v) => v.lang === 'ur-PK') ||
       voices.find((v) => v.lang === 'ur') ||
       voices.find((v) => v.name.toLowerCase().includes('urdu'));
@@ -96,6 +106,7 @@ export function pickSpeechVoice(preferredLang, { forRomanUrdu = false } = {}) {
   }
 
   return (
+    voices.find((v) => genderMatch(v) && v.lang === preferredLang) ||
     voices.find((v) => v.lang === preferredLang) ||
     voices.find((v) => v.lang.startsWith(`${code}-`)) ||
     voices.find((v) => v.lang.startsWith(code)) ||
