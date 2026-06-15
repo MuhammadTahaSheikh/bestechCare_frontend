@@ -21,7 +21,14 @@ export default function Payment() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const requiresCnic = method === 'jazzcash';
+  const showCnic = method === 'jazzcash';
+  const requiresCnic = method === 'jazzcash' && Boolean(preview?.payment_live);
+
+  useEffect(() => {
+    if (method === 'jazzcash' && !preview?.payment_live && !cnic) {
+      setCnic('345678');
+    }
+  }, [method, preview?.payment_live, cnic]);
 
   useEffect(() => {
     if (!type || !id) return;
@@ -43,7 +50,7 @@ export default function Payment() {
         reference_id: Number(id),
         method,
         phone,
-        cnic: method === 'jazzcash' ? cnic : undefined,
+        cnic: method === 'jazzcash' ? (cnic || '345678') : undefined,
       });
 
       if (result.completed) {
@@ -108,8 +115,10 @@ export default function Payment() {
             <div className="payment-summary">
               <p><strong>{preview.title}</strong></p>
               <p className="payment-amount">Rs. {Number(preview.amount).toLocaleString()}</p>
-              {preview.jazzcash_live && (
-                <p className="text-muted">JazzCash live payments enabled</p>
+              {preview.payment_live ? (
+                <p className="text-muted payment-mode-live">Live mode — amount will be deducted from your wallet</p>
+              ) : (
+                <p className="text-muted payment-mode-test">Test mode — OTP to your phone, no real charge</p>
               )}
             </div>
           )}
@@ -137,33 +146,34 @@ export default function Payment() {
                   onChange={(e) => setPhone(e.target.value)}
                 />
               </div>
-              {requiresCnic && (
+              {showCnic && (
                 <div className="form-group">
                   <label>CNIC (last 6 digits)</label>
                   <input
                     type="text"
-                    required
+                    required={requiresCnic}
                     maxLength={6}
                     pattern="[0-9]{6}"
                     placeholder="345678"
                     value={cnic}
                     onChange={(e) => setCnic(e.target.value.replace(/\D/g, '').slice(0, 6))}
                   />
-                  <p className="text-muted">Sandbox test: use CNIC <strong>345678</strong></p>
+                  {preview?.payment_live ? (
+                    <p className="text-muted">Required for JazzCash live wallet deduction</p>
+                  ) : (
+                    <p className="text-muted">Sandbox default: <strong>345678</strong> (no real charge in test mode)</p>
+                  )}
                 </div>
               )}
               {error && <p className="message error">{error}</p>}
               <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
                 {loading ? 'Sending OTP...' : 'Pay Now'}
               </button>
-              {method === 'jazzcash' && preview?.jazzcash_live && (
-                <p className="text-muted mt-2">OTP will be sent to your JazzCash number via SMS.</p>
+              {preview?.payment_live && method === 'jazzcash' && (
+                <p className="text-muted mt-2">JazzCash will send OTP to your phone. Your wallet will be charged after verification.</p>
               )}
-              {method === 'jazzcash' && !preview?.jazzcash_live && (
-                <p className="text-muted mt-2">Demo mode: OTP will be emailed to your account.</p>
-              )}
-              {method === 'easypaisa' && (
-                <p className="text-muted mt-2">OTP will be emailed to your registered account.</p>
+              {!preview?.payment_live && (
+                <p className="text-muted mt-2">OTP will be sent to {phone || 'your phone number'} via SMS. No money will be deducted in test mode.</p>
               )}
             </form>
           )}
@@ -175,7 +185,11 @@ export default function Payment() {
                 {otpMessage ||
                   (paymentMode === 'jazzcash'
                     ? `An OTP has been sent to ${phone} via JazzCash SMS.`
-                    : `An OTP has been sent to your registered email.`)}
+                    : paymentMode === 'sms'
+                      ? `An OTP has been sent to ${phone} via SMS.`
+                      : paymentMode === 'email'
+                        ? 'An OTP has been sent to your registered email.'
+                        : `An OTP has been sent to ${phone || 'your phone'}.`)}
               </p>
               {demoOtp && <p className="demo-otp">Demo OTP: <strong>{demoOtp}</strong></p>}
               <div className="form-group">
