@@ -4,6 +4,7 @@ import { io } from 'socket.io-client';
 import { api } from '../api/client';
 import { API_URL } from '../config.js';
 import { useAuth } from '../context/AuthContext';
+import { getConsultationMediaStream } from '../utils/consultationMedia.js';
 
 const ICE_SERVERS = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
@@ -65,9 +66,12 @@ export default function VideoConsultation() {
         if (!mounted) return;
         setRoom(roomData);
 
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        const stream = await getConsultationMediaStream();
         localStreamRef.current = stream;
-        if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+        if (localVideoRef.current) {
+          localVideoRef.current.srcObject = stream;
+          localVideoRef.current.play().catch(() => {});
+        }
 
         const token = localStorage.getItem('token');
         const socket = io(API_URL || window.location.origin, { auth: { token } });
@@ -81,6 +85,7 @@ export default function VideoConsultation() {
         pc.ontrack = (event) => {
           if (remoteVideoRef.current) {
             remoteVideoRef.current.srcObject = event.streams[0];
+            remoteVideoRef.current.play().catch(() => {});
           }
           setStatus('connected');
         };
