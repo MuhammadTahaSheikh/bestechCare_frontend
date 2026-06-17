@@ -3,12 +3,41 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import { api } from '../api/client';
 import { API_URL } from '../config.js';
+import { useAuth } from '../context/AuthContext';
 
 const ICE_SERVERS = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+
+function getInitials(name) {
+  if (!name) return '?';
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .map((part) => part[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+}
+
+function formatAppointmentWhen(date, time) {
+  if (!date) return '';
+  const parsed = new Date(date);
+  const dateLabel = Number.isNaN(parsed.getTime())
+    ? date
+    : parsed.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+  const timeLabel = time?.slice(0, 5) || '';
+  return timeLabel ? `${dateLabel} · ${timeLabel}` : dateLabel;
+}
+
+function statusLabel(status) {
+  if (status === 'connected') return 'Connected';
+  if (status === 'waiting') return 'Waiting for participant';
+  return 'Connecting';
+}
 
 export default function VideoConsultation() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [room, setRoom] = useState(null);
   const [status, setStatus] = useState('connecting');
   const [error, setError] = useState('');
@@ -20,6 +49,12 @@ export default function VideoConsultation() {
   const pcRef = useRef(null);
   const socketRef = useRef(null);
   const localStreamRef = useRef(null);
+
+  const remoteName = room
+    ? (room.role === 'doctor' ? room.patient_name : room.doctor_name)
+    : '';
+  const remoteRoleLabel = room?.role === 'doctor' ? 'Patient' : 'Doctor';
+  const backPath = room?.role === 'doctor' ? '/doctor/consultations' : '/appointments';
 
   useEffect(() => {
     let mounted = true;
@@ -67,12 +102,10 @@ export default function VideoConsultation() {
           socket.emit('join-room', { roomId: roomData.room_id, role: roomData.role });
         });
 
-        // Doctor already in room: patient joining triggers offer.
         socket.on('user-joined', () => {
           sendOfferIfDoctor().catch(() => {});
         });
 
-        // Patient already in room: doctor joining must start offer (user-joined only goes to existing peers).
         socket.on('room-joined', ({ participants }) => {
           if (participants >= 2) sendOfferIfDoctor().catch(() => {});
         });
@@ -118,25 +151,26 @@ export default function VideoConsultation() {
 
   const toggleMute = () => {
     localStreamRef.current?.getAudioTracks().forEach((t) => { t.enabled = !t.enabled; });
-    setMuted(!muted);
+    setMuted((prev) => !prev);
   };
 
   const toggleCamera = () => {
     localStreamRef.current?.getVideoTracks().forEach((t) => { t.enabled = !t.enabled; });
-    setCameraOff(!cameraOff);
+    setCameraOff((prev) => !prev);
   };
 
   const endCall = () => {
     if (room?.room_id) {
       socketRef.current?.emit('leave-room', { roomId: room.room_id });
     }
-    navigate(room?.role === 'doctor' ? '/doctor/consultations' : '/appointments');
+    navigate(backPath);
   };
 
   if (error) {
     return (
-      <div className="page">
-        <div className="container empty-state">
+      <div className="consultation-page consultation-page--error">
+        <div className="consultation-error-card">
+          <div className="consultation-error-icon" aria-hidden="true">⚠️</div>
           <h2>Cannot join consultation</h2>
           <p>{error}</p>
           <Link to="/appointments" className="btn btn-primary">Back to Appointments</Link>
@@ -147,44 +181,111 @@ export default function VideoConsultation() {
 
   return (
     <div className="consultation-page">
-      <div className="consultation-header">
-        <div>
-          <h2>Online Consultation</h2>
+      <header className="consultation-topbar">
+        <button type="button" className="consultation-back" onClick={endCall} aria-label="Leave call">
+          ←
+        </button>
+
+        <div className="consultation-topbar-info">
+          <h1>Online Consultation</h1>
           {room && (
-            <p className="text-muted">
-              {room.role === 'doctor' ? room.patient_name : room.doctor_name} ·{' '}
-              {new Date(room.appointment_date).toLocaleDateString()} {room.appointment_time?.slice(0, 5)}
+            <p>
+              <span className="consultation-participant-name">{remoteName}</span>
+              <span className="consultation-meta-sep">·</span>
+              <span>{formatAppointmentWhen(room.appointment_date, room.appointment_time)}</span>
             </p>
           )}
         </div>
-        <span className={`consultation-status status-${status}`}>
-          {status === 'connected' ? 'Connected' : status === 'waiting' ? 'Waiting for other party...' : 'Connecting...'}
-        </span>
+
+        <div className={`consultation-live-badge consultation-live-badge--${status}`}>
+          <span className="consultation-live-dot" aria-hidden="true" />
+          {statusLabel(status)}
+        </div>
+      </header>
+
+      <div className="consultation-stage">
+        <div className={`consultation-remote ${status === 'connected' ? 'is-connected' : ''}`}>
+          <video
+            ref={remoteVideoRef}
+            autoPlay
+            playsInline
+            className={status === 'connected' ? 'is-visible' : ''}
+          />
+
+          {status !== 'connected' && (
+            <div className="consultation-waiting">
+              <div className="consultation-avatar consultation-avatar--lg consultation-avatar--pulse">
+                {getInitials(remoteName)}
+              </div>
+              <p className="consultation-waiting-title">
+                Waiting for {remoteRoleLabel.toLowerCase()}
+              </p>
+              <p className="consultation-waiting-name">{remoteName || '…'}</p>
+              <p className="consultation-waiting-hint">
+                They will appear here once they join the call
+              </p>
+            </div>
+          )}
+
+          {status === 'connected' && (
+            <div className="consultation-remote-label">
+              <span className="consultation-remote-role">{remoteRoleLabel}</span>
+              <span>{remoteName}</span>
+            </div>
+          )}
+        </div>
+
+        <div className={`consultation-pip ${cameraOff ? 'camera-off' : ''}`}>
+          {!cameraOff ? (
+            <video ref={localVideoRef} autoPlay playsInline muted />
+          ) : (
+            <div className="consultation-pip-placeholder">
+              <div className="consultation-avatar">{getInitials(user?.name || 'You')}</div>
+            </div>
+          )}
+
+          <div className="consultation-pip-label">
+            You
+            {muted && <span className="consultation-pip-muted" title="Microphone muted">🔇</span>}
+          </div>
+        </div>
       </div>
 
-      <div className="video-grid">
-        <div className="video-box remote">
-          <video ref={remoteVideoRef} autoPlay playsInline />
-          {status !== 'connected' && <div className="video-placeholder">Waiting for {room?.role === 'doctor' ? 'patient' : 'doctor'}...</div>}
-          <span className="video-label">{room?.role === 'doctor' ? room?.patient_name : room?.doctor_name}</span>
-        </div>
-        <div className="video-box local">
-          <video ref={localVideoRef} autoPlay playsInline muted />
-          <span className="video-label">You {muted && '(muted)'} {cameraOff && '(camera off)'}</span>
-        </div>
-      </div>
+      <footer className="consultation-toolbar-wrap">
+        <div className="consultation-toolbar">
+          <button
+            type="button"
+            className={`consultation-tool ${muted ? 'is-off' : ''}`}
+            onClick={toggleMute}
+            aria-pressed={muted}
+            aria-label={muted ? 'Unmute microphone' : 'Mute microphone'}
+          >
+            <span className="consultation-tool-icon" aria-hidden="true">{muted ? '🔇' : '🎤'}</span>
+            <span className="consultation-tool-text">{muted ? 'Unmute' : 'Mute'}</span>
+          </button>
 
-      <div className="consultation-controls">
-        <button className={`control-btn ${muted ? 'active' : ''}`} onClick={toggleMute}>
-          {muted ? '🔇' : '🎤'} {muted ? 'Unmute' : 'Mute'}
-        </button>
-        <button className={`control-btn ${cameraOff ? 'active' : ''}`} onClick={toggleCamera}>
-          {cameraOff ? '📷' : '📹'} {cameraOff ? 'Camera On' : 'Camera Off'}
-        </button>
-        <button className="control-btn end-call" onClick={endCall}>
-          📞 End Call
-        </button>
-      </div>
+          <button
+            type="button"
+            className={`consultation-tool ${cameraOff ? 'is-off' : ''}`}
+            onClick={toggleCamera}
+            aria-pressed={cameraOff}
+            aria-label={cameraOff ? 'Turn camera on' : 'Turn camera off'}
+          >
+            <span className="consultation-tool-icon" aria-hidden="true">{cameraOff ? '📷' : '📹'}</span>
+            <span className="consultation-tool-text">{cameraOff ? 'Start video' : 'Stop video'}</span>
+          </button>
+
+          <button
+            type="button"
+            className="consultation-tool consultation-tool--end"
+            onClick={endCall}
+            aria-label="End call"
+          >
+            <span className="consultation-tool-icon" aria-hidden="true">📞</span>
+            <span className="consultation-tool-text">End call</span>
+          </button>
+        </div>
+      </footer>
     </div>
   );
 }
