@@ -1703,7 +1703,10 @@ a {
 .consultation-remote video {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  object-position: center;
   opacity: 0;
   transition: opacity 0.35s ease;
 }
@@ -1811,15 +1814,25 @@ a {
 .consultation-pip video {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  object-position: center;
   display: block;
+  background: #0b0f14;
+}
+
+.consultation-pip video.is-hidden {
+  visibility: hidden;
+  position: absolute;
+  inset: 0;
 }
 
 .consultation-pip.camera-off video {
-  display: none;
+  display: block;
 }
 
 .consultation-pip-placeholder {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   display: flex;

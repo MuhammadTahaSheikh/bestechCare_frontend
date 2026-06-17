@@ -149,14 +149,38 @@ export default function VideoConsultation() {
     };
   }, [id]);
 
+  useEffect(() => {
+    const video = localVideoRef.current;
+    const stream = localStreamRef.current;
+    if (!video || !stream) return;
+
+    if (video.srcObject !== stream) {
+      video.srcObject = stream;
+    }
+
+    if (!cameraOff) {
+      video.play().catch(() => {});
+    }
+  }, [cameraOff]);
+
   const toggleMute = () => {
     localStreamRef.current?.getAudioTracks().forEach((t) => { t.enabled = !t.enabled; });
     setMuted((prev) => !prev);
   };
 
   const toggleCamera = () => {
-    localStreamRef.current?.getVideoTracks().forEach((t) => { t.enabled = !t.enabled; });
-    setCameraOff((prev) => !prev);
+    const tracks = localStreamRef.current?.getVideoTracks();
+    if (!tracks?.length) return;
+
+    const turningOff = tracks[0].enabled;
+    tracks.forEach((track) => {
+      track.enabled = !turningOff;
+    });
+    setCameraOff(turningOff);
+
+    if (!turningOff && localVideoRef.current) {
+      localVideoRef.current.play().catch(() => {});
+    }
   };
 
   const endCall = () => {
@@ -236,9 +260,15 @@ export default function VideoConsultation() {
         </div>
 
         <div className={`consultation-pip ${cameraOff ? 'camera-off' : ''}`}>
-          {!cameraOff ? (
-            <video ref={localVideoRef} autoPlay playsInline muted />
-          ) : (
+          <video
+            ref={localVideoRef}
+            autoPlay
+            playsInline
+            muted
+            className={cameraOff ? 'is-hidden' : ''}
+          />
+
+          {cameraOff && (
             <div className="consultation-pip-placeholder">
               <div className="consultation-avatar">{getInitials(user?.name || 'You')}</div>
             </div>
