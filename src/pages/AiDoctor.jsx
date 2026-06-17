@@ -4,6 +4,7 @@ import { api } from '../api/client';
 import { useCity } from '../context/CityContext';
 import { useAiDoctorVoice } from '../hooks/useAiDoctorVoice';
 import { voiceLangFor } from '../utils/languageUtils';
+import AiDoctorVideoCall from '../components/AiDoctorVideoCall';
 
 const SESSION_KEY = 'ai_doctor_session_id';
 
@@ -402,7 +403,7 @@ export default function AiDoctor() {
           <div>
             <h1>AI Doctor</h1>
             <p className="text-muted">
-              Chat by text or voice — always consult a real doctor for diagnosis and treatment.
+              Video call with your AI doctor — talk, type, or use hands-free mode. Always consult a real doctor for diagnosis and treatment.
             </p>
             {doctorGender && preferredLanguage && (
               <p className="ai-doctor-session-meta">
@@ -448,56 +449,28 @@ export default function AiDoctor() {
 
         <div className="ai-doctor-layout">
           <div className="ai-doctor-chat">
-            {voiceSupported && configured && !summary && (
-              <div className="ai-doctor-voice-bar">
-                <button
-                  type="button"
-                  className={`ai-doctor-mic-btn ${isListening ? 'listening' : ''} ${isSpeaking ? 'speaking' : ''}`}
-                  onClick={toggleListening}
-                  disabled={sending}
-                  title={isListening ? 'Stop listening' : 'Tap to speak'}
-                  aria-label={isListening ? 'Stop microphone' : 'Start microphone'}
-                >
-                  <span className="ai-doctor-mic-icon">
-                    {isListening ? '🎙️' : isSpeaking ? '🔊' : '🎤'}
-                  </span>
-                  <span className="ai-doctor-mic-label">
-                    {isListening ? 'Listening… tap to stop' : isSpeaking ? 'AI speaking…' : 'Tap to talk'}
-                  </span>
-                </button>
-
-                <div className="ai-doctor-voice-options">
-                  <label className="ai-doctor-voice-toggle">
-                    <input
-                      type="checkbox"
-                      checked={voiceReplies}
-                      onChange={(e) => setVoiceReplies(e.target.checked)}
-                    />
-                    Voice replies
-                  </label>
-                  <label className="ai-doctor-voice-toggle">
-                    <input
-                      type="checkbox"
-                      checked={handsFree}
-                      onChange={(e) => setHandsFree(e.target.checked)}
-                    />
-                    Hands-free
-                  </label>
-                  <span className="ai-doctor-lang-badge" title="Selected consultation language">
-                    {languageLabel}
-                  </span>
-                </div>
-              </div>
+            {configured && !summary && chatReady && (
+              <AiDoctorVideoCall
+                active
+                doctorLabel={doctorLabel(doctorGender)}
+                isListening={isListening}
+                isSpeaking={isSpeaking}
+                sending={sending}
+                voiceSupported={voiceSupported}
+                toggleListening={toggleListening}
+                voiceReplies={voiceReplies}
+                setVoiceReplies={setVoiceReplies}
+                handsFree={handsFree}
+                setHandsFree={setHandsFree}
+                languageLabel={languageLabel}
+                interimText={interimText}
+              />
             )}
 
             {!voiceSupported && configured && !summary && (
               <p className="ai-doctor-voice-hint">
                 Voice chat works best in Chrome or Edge on desktop/mobile.
               </p>
-            )}
-
-            {(isListening && interimText) && (
-              <div className="ai-doctor-interim">You: {interimText}</div>
             )}
 
             <div className="ai-doctor-messages">
