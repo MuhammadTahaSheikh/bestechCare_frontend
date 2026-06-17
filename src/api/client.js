@@ -86,6 +86,9 @@ export const api = {
   getConsultationRoom: (id) => request(`/consultation/${id}`),
   getDoctorConsultations: () => request('/consultation/doctor/my'),
 
+  // User summaries
+  getMySummary: () => request('/summary/my'),
+
   // AI Doctor
   getAiDoctorStatus: () => request('/ai-doctor/status'),
   createAiDoctorSession: (city, prefs = {}) =>
@@ -126,6 +129,7 @@ export const api = {
 
   // Admin
   adminGetStats: () => request('/admin/stats'),
+  adminGetSummaries: () => request('/admin/summaries'),
   adminGetAppointments: () => request('/admin/appointments'),
   adminUpdateAppointmentStatus: (id, status) =>
     request(`/admin/appointments/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),

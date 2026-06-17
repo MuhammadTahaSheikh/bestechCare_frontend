@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import { getLoginPath, getRegisterPath } from '../utils/authRedirect';
 
 export default function DoctorDetail() {
   const { id } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const loginPath = getLoginPath(`/doctors/${id}`);
+  const registerPath = getRegisterPath(`/doctors/${id}`);
   const [doctor, setDoctor] = useState(null);
   const [loading, setLoading] = useState(true);
   const [booking, setBooking] = useState(false);
@@ -36,9 +39,11 @@ export default function DoctorDetail() {
   }, [id]);
 
   useEffect(() => {
-    if (!form.appointment_date) {
+    if (!user || !form.appointment_date) {
       setAvailableSlots([]);
-      setForm((prev) => ({ ...prev, appointment_time: '' }));
+      if (!form.appointment_date) {
+        setForm((prev) => ({ ...prev, appointment_time: '' }));
+      }
       return;
     }
 
@@ -54,14 +59,14 @@ export default function DoctorDetail() {
       })
       .catch(() => setAvailableSlots([]))
       .finally(() => setSlotsLoading(false));
-  }, [id, form.appointment_date]);
+  }, [id, form.appointment_date, user]);
 
   const minDate = new Date().toISOString().slice(0, 10);
 
   const handleReview = async (e) => {
     e.preventDefault();
     if (!user) {
-      navigate('/login');
+      navigate(loginPath);
       return;
     }
     setReviewMsg('');
@@ -78,10 +83,6 @@ export default function DoctorDetail() {
 
   const handleBook = async (e) => {
     e.preventDefault();
-    if (!user) {
-      navigate('/login');
-      return;
-    }
 
     if (!form.appointment_date || !form.appointment_time) {
       setMessage('Please select a date and time slot');
@@ -201,6 +202,17 @@ export default function DoctorDetail() {
               <h3>Book Appointment</h3>
               <p className="fee-display">Rs. {Number(doctor.consultation_fee).toLocaleString()}</p>
 
+              {!user ? (
+                <div className="booking-login-gate">
+                  <p className="text-muted">Sign in to choose a date and book your appointment.</p>
+                  <Link to={loginPath} className="btn btn-primary btn-block">
+                    Login to Book
+                  </Link>
+                  <p className="auth-footer">
+                    New here? <Link to={registerPath}>Create an account</Link>
+                  </p>
+                </div>
+              ) : (
               <form onSubmit={handleBook}>
                 <div className="form-group">
                   <label>Date</label>
@@ -261,6 +273,7 @@ export default function DoctorDetail() {
                   {booking ? 'Booking...' : 'Book Now'}
                 </button>
               </form>
+              )}
               {message && <p className={`message ${message.includes('success') ? 'success' : 'error'}`}>{message}</p>}
             </div>
           </div>

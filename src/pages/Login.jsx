@@ -1,11 +1,14 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
+import { getRedirectFromSearch, getRegisterPath } from '../utils/authRedirect';
 
 export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirectTo = getRedirectFromSearch(searchParams);
   const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
@@ -21,7 +24,7 @@ export default function Login() {
     setLoading(true);
     try {
       await login(form.email, form.password);
-      navigate('/');
+      navigate(redirectTo);
     } catch (err) {
       if (err.code === 'EMAIL_NOT_VERIFIED') {
         setUnverifiedEmail(err.email || form.email);
@@ -94,7 +97,7 @@ export default function Login() {
         )}
 
         <p className="auth-footer">
-          Don't have an account? <Link to="/register">Register</Link>
+          Don't have an account? <Link to={getRegisterPath(searchParams.get('redirect'))}>Register</Link>
         </p>
       </div>
     </div>

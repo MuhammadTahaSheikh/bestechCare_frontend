@@ -73,6 +73,7 @@ export default function Navbar() {
               <div className="nav-mobile-user">
                 <p className="nav-mobile-greeting">Hi, {firstName}</p>
                 <Link to="/appointments" onClick={closeMobile}>My Appointments</Link>
+                <Link to="/my-summary" onClick={closeMobile}>My Summary</Link>
                 <Link to="/orders" onClick={closeMobile}>My Orders</Link>
                 {user.role === 'doctor' && (
                   <Link to="/doctor/consultations" onClick={closeMobile}>Consultations</Link>
@@ -131,6 +132,7 @@ export default function Navbar() {
                       <span className="text-muted">{user.email}</span>
                     </div>
                     <Link to="/appointments" onClick={() => setUserOpen(false)}>My Appointments</Link>
+                    <Link to="/my-summary" onClick={() => setUserOpen(false)}>My Summary</Link>
                     <Link to="/orders" onClick={() => setUserOpen(false)}>My Orders</Link>
                     {user.role === 'doctor' && (
                       <Link to="/doctor/consultations" onClick={() => setUserOpen(false)}>Consultations</Link>

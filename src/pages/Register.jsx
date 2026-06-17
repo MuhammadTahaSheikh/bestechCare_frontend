@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../api/client';
+import { getLoginPath } from '../utils/authRedirect';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -111,7 +112,7 @@ export default function Register() {
         </form>
 
         <p className="auth-footer">
-          Already have an account? <Link to="/login">Login</Link>
+          Already have an account? <Link to={getLoginPath(searchParams.get('redirect'))}>Login</Link>
         </p>
       </div>
     </div>

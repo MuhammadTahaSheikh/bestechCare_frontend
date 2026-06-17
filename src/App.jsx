@@ -29,6 +29,7 @@ import Payment from './pages/Payment';
 import PaymentResult from './pages/PaymentResult';
 import VideoConsultation from './pages/VideoConsultation';
 import DoctorConsultations from './pages/DoctorConsultations';
+import MySummary from './pages/MySummary';
 import AiDoctor from './pages/AiDoctor';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminAppointments from './pages/admin/AdminAppointments';
@@ -37,6 +38,7 @@ import AdminHospitals from './pages/admin/AdminHospitals';
 import AdminMedicines from './pages/admin/AdminMedicines';
 import AdminLabs from './pages/admin/AdminLabs';
 import AdminOrders from './pages/admin/AdminOrders';
+import AdminSummaries from './pages/admin/AdminSummaries';
 
 function MainLayout() {
   return (
@@ -69,6 +71,7 @@ export default function App() {
                 <Route path="medicines" element={<AdminMedicines />} />
                 <Route path="labs" element={<AdminLabs />} />
                 <Route path="orders" element={<AdminOrders />} />
+                <Route path="summaries" element={<AdminSummaries />} />
               </Route>
 
               <Route element={<MainLayout />}>
@@ -81,7 +84,7 @@ export default function App() {
                 <Route path="/labs/:id" element={<LabDetail />} />
                 <Route path="/deals" element={<Deals />} />
                 <Route path="/medicines" element={<Medicines />} />
-                <Route path="/ai-doctor" element={<AiDoctor />} />
+                <Route path="/ai-doctor" element={<ProtectedRoute><AiDoctor /></ProtectedRoute>} />
                 <Route path="/cart" element={<Cart />} />
                 <Route path="/orders" element={<ProtectedRoute><MyOrders /></ProtectedRoute>} />
                 <Route path="/blog" element={<Blog />} />
@@ -96,6 +99,9 @@ export default function App() {
                 <Route path="/payment/result" element={<PaymentResult />} />
                 <Route path="/doctor/consultations" element={
                   <ProtectedRoute roles={['doctor']}><DoctorConsultations /></ProtectedRoute>
+                } />
+                <Route path="/my-summary" element={
+                  <ProtectedRoute><MySummary /></ProtectedRoute>
                 } />
               </Route>
             </Routes>

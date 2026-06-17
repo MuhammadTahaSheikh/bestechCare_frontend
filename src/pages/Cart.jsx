@@ -3,21 +3,20 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
+import { getLoginPath, getRegisterPath } from '../utils/authRedirect';
 
 export default function Cart() {
   const { items, updateQuantity, removeItem, total, clearCart } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const loginPath = getLoginPath('/cart');
+  const registerPath = getRegisterPath('/cart');
   const [form, setForm] = useState({ shipping_address: '', phone: '', notes: '' });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
   const handleCheckout = async (e) => {
     e.preventDefault();
-    if (!user) {
-      navigate('/login');
-      return;
-    }
     setLoading(true);
     setMessage('');
     try {
@@ -83,6 +82,16 @@ export default function Cart() {
 
             {message ? (
               <p className={`message ${message.includes('success') ? 'success' : 'error'}`}>{message}</p>
+            ) : !user ? (
+              <div className="booking-login-gate">
+                <p className="text-muted">Sign in to enter delivery details and place your order.</p>
+                <Link to={loginPath} className="btn btn-primary btn-block">
+                  Login to Place Order
+                </Link>
+                <p className="auth-footer">
+                  New here? <Link to={registerPath}>Create an account</Link>
+                </p>
+              </div>
             ) : (
               <form onSubmit={handleCheckout}>
                 <div className="form-group">

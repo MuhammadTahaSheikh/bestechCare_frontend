@@ -9,6 +9,7 @@ const links = [
   { to: '/admin/medicines', label: 'Medicines' },
   { to: '/admin/labs', label: 'Labs & Tests' },
   { to: '/admin/orders', label: 'Orders' },
+  { to: '/admin/summaries', label: 'Summaries' },
 ];
 
 export default function AdminLayout() {
