@@ -1540,12 +1540,11 @@ a {
 
 /* Video Consultation */
 .consultation-page {
+  position: relative;
   min-height: 100vh;
   min-height: 100dvh;
-  background: #0b0f14;
+  background: #000;
   color: #f8fafc;
-  display: flex;
-  flex-direction: column;
   overflow: hidden;
 }
 
@@ -1581,14 +1580,18 @@ a {
 }
 
 .consultation-topbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 30;
   display: flex;
   align-items: center;
   gap: 16px;
   padding: 16px 24px;
-  background: rgba(15, 20, 28, 0.92);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(12px);
-  z-index: 20;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.72), rgba(0, 0, 0, 0.2), transparent);
+  border-bottom: none;
+  backdrop-filter: blur(6px);
 }
 
 .consultation-back {
@@ -1683,10 +1686,9 @@ a {
 }
 
 .consultation-stage {
-  position: relative;
-  flex: 1;
-  min-height: 0;
-  background: #05080c;
+  position: absolute;
+  inset: 0;
+  background: #000;
 }
 
 .consultation-remote {
@@ -1695,21 +1697,19 @@ a {
   display: flex;
   align-items: center;
   justify-content: center;
-  background:
-    radial-gradient(circle at 50% 20%, rgba(0, 168, 150, 0.08), transparent 45%),
-    #05080c;
+  background: #000;
 }
 
 .consultation-remote video {
-  display: block;
-  width: auto;
-  height: auto;
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
   object-position: center;
   opacity: 0;
   transition: opacity 0.35s ease;
+  background: #000;
 }
 
 .consultation-remote video.is-visible {
@@ -1778,7 +1778,8 @@ a {
 .consultation-remote-label {
   position: absolute;
   left: 20px;
-  bottom: 20px;
+  bottom: 110px;
+  z-index: 12;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -1801,7 +1802,8 @@ a {
 .consultation-pip {
   position: absolute;
   right: 24px;
-  bottom: 24px;
+  bottom: 100px;
+  z-index: 20;
   width: min(34vw, 300px);
   aspect-ratio: 16 / 9;
   border-radius: 16px;
@@ -1809,7 +1811,6 @@ a {
   background: #0b0f14;
   border: 2px solid rgba(255, 255, 255, 0.14);
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
-  z-index: 10;
 }
 
 .consultation-pip video {
@@ -1862,9 +1863,13 @@ a {
 }
 
 .consultation-toolbar-wrap {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
   padding: 20px 24px 28px;
-  background: linear-gradient(to top, rgba(5, 8, 12, 0.98), rgba(5, 8, 12, 0.75));
-  z-index: 20;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.82), rgba(0, 0, 0, 0.35), transparent);
 }
 
 .consultation-toolbar {
@@ -2383,14 +2388,14 @@ a {
 
   .consultation-pip {
     right: 16px;
-    bottom: 16px;
+    bottom: 88px;
     width: 120px;
     border-radius: 12px;
   }
 
   .consultation-remote-label {
     left: 14px;
-    bottom: 14px;
+    bottom: 96px;
     font-size: 0.8rem;
   }
 

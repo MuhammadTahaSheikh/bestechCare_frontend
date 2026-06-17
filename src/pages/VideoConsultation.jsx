@@ -4,9 +4,15 @@ import { io } from 'socket.io-client';
 import { api } from '../api/client';
 import { API_URL } from '../config.js';
 import { useAuth } from '../context/AuthContext';
-import { getConsultationMediaStream } from '../utils/consultationMedia.js';
+import { attachRemoteStream, getConsultationMediaStream, optimizeOutgoingVideo } from '../utils/consultationMedia.js';
 
-const ICE_SERVERS = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+const ICE_SERVERS = {
+  iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+  ],
+  iceCandidatePoolSize: 4,
+};
 
 function getInitials(name) {
   if (!name) return '?';
@@ -50,6 +56,7 @@ export default function VideoConsultation() {
   const pcRef = useRef(null);
   const socketRef = useRef(null);
   const localStreamRef = useRef(null);
+  const offerSentRef = useRef(false);
 
   const remoteName = room
     ? (room.role === 'doctor' ? room.patient_name : room.doctor_name)
@@ -81,12 +88,10 @@ export default function VideoConsultation() {
         pcRef.current = pc;
 
         stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+        await optimizeOutgoingVideo(pc);
 
         pc.ontrack = (event) => {
-          if (remoteVideoRef.current) {
-            remoteVideoRef.current.srcObject = event.streams[0];
-            remoteVideoRef.current.play().catch(() => {});
-          }
+          attachRemoteStream(remoteVideoRef.current, event.streams[0]);
           setStatus('connected');
         };
 
@@ -96,9 +101,22 @@ export default function VideoConsultation() {
           }
         };
 
+        pc.onconnectionstatechange = () => {
+          if (pc.connectionState === 'connected') {
+            optimizeOutgoingVideo(pc).catch(() => {});
+          }
+        };
+
         const sendOfferIfDoctor = async () => {
-          if (roomData.role !== 'doctor') return;
-          const offer = await pc.createOffer();
+          if (roomData.role !== 'doctor' || offerSentRef.current) return;
+          offerSentRef.current = true;
+
+          await optimizeOutgoingVideo(pc);
+          const offer = await pc.createOffer({
+            offerToReceiveAudio: true,
+            offerToReceiveVideo: true,
+            iceRestart: false,
+          });
           await pc.setLocalDescription(offer);
           socket.emit('offer', { roomId: roomData.room_id, offer });
         };
@@ -117,6 +135,7 @@ export default function VideoConsultation() {
 
         socket.on('offer', async ({ offer }) => {
           await pc.setRemoteDescription(offer);
+          await optimizeOutgoingVideo(pc);
           const answer = await pc.createAnswer();
           await pc.setLocalDescription(answer);
           socket.emit('answer', { roomId: roomData.room_id, answer });
@@ -124,6 +143,7 @@ export default function VideoConsultation() {
 
         socket.on('answer', async ({ answer }) => {
           await pc.setRemoteDescription(answer);
+          await optimizeOutgoingVideo(pc);
         });
 
         socket.on('ice-candidate', async ({ candidate }) => {

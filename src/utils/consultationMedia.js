@@ -21,13 +21,14 @@ export async function getConsultationMediaStream() {
     audio: {
       echoCancellation: true,
       noiseSuppression: true,
+      autoGainControl: true,
     },
     video: {
       facingMode: 'user',
-      width: { ideal: 1280, max: 1920 },
-      height: { ideal: 720, max: 1080 },
+      width: { ideal: 1280, max: 1280 },
+      height: { ideal: 720, max: 720 },
       aspectRatio: { ideal: 16 / 9 },
-      resizeMode: 'none',
+      frameRate: { ideal: 24, max: 30 },
     },
   };
 
@@ -37,7 +38,12 @@ export async function getConsultationMediaStream() {
     stream = await navigator.mediaDevices.getUserMedia(wideConstraints);
   } catch {
     stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
+      video: {
+        facingMode: 'user',
+        width: { ideal: 1280, max: 1280 },
+        height: { ideal: 720, max: 720 },
+        frameRate: { ideal: 24, max: 30 },
+      },
       audio: true,
     });
   }
@@ -48,4 +54,43 @@ export async function getConsultationMediaStream() {
   }
 
   return stream;
+}
+
+/** Cap outgoing bitrate/resolution so the remote side does not stutter on slower uploads. */
+export async function optimizeOutgoingVideo(peerConnection) {
+  const senders = peerConnection.getSenders().filter((sender) => sender.track?.kind === 'video');
+
+  await Promise.all(
+    senders.map(async (sender) => {
+      try {
+        const params = sender.getParameters();
+        if (!params.encodings?.length) {
+          params.encodings = [{}];
+        }
+
+        params.encodings[0].maxBitrate = 600_000;
+        params.encodings[0].maxFramerate = 24;
+        params.encodings[0].scaleResolutionDownBy = 1.5;
+
+        await sender.setParameters(params);
+      } catch {
+        // Some browsers reject encoding tweaks until the connection is stable.
+      }
+    })
+  );
+}
+
+export function attachRemoteStream(videoEl, stream) {
+  if (!videoEl || !stream) return;
+
+  videoEl.srcObject = stream;
+  videoEl.setAttribute('playsinline', 'true');
+  videoEl.setAttribute('webkit-playsinline', 'true');
+
+  const play = () => videoEl.play().catch(() => {});
+  if (videoEl.readyState >= 2) {
+    play();
+  } else {
+    videoEl.onloadedmetadata = play;
+  }
 }
