@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useCity } from '../context/CityContext';
 import { useCart } from '../context/CartContext';
 import CityModal from './CityModal';
+import DoctorOnlineToggle from './DoctorOnlineToggle';
 
 const navItems = [
   { to: '/doctors', label: 'Doctors' },
@@ -69,6 +70,12 @@ export default function Navbar() {
               <a href="tel:03114315611" className="helpline-mobile">0311-4315611</a>
             </div>
 
+            {user && user.role === 'doctor' && (
+              <div className="nav-mobile-online">
+                <DoctorOnlineToggle variant="compact" />
+              </div>
+            )}
+
             {user && (
               <div className="nav-mobile-user">
                 <p className="nav-mobile-greeting">Hi, {firstName}</p>
@@ -109,6 +116,10 @@ export default function Navbar() {
               </svg>
               {count > 0 && <span className="cart-count">{count}</span>}
             </Link>
+
+            {user?.role === 'doctor' && (
+              <DoctorOnlineToggle variant="compact" />
+            )}
 
             {user ? (
               <div className="user-dropdown" ref={userRef}>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api/client';
 
-export default function DoctorOnlineToggle({ className = '' }) {
+export default function DoctorOnlineToggle({ className = '', variant = 'default' }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [onlineConsultation, setOnlineConsultation] = useState(false);
@@ -33,14 +33,33 @@ export default function DoctorOnlineToggle({ className = '' }) {
     }
   };
 
-  if (loading) {
-    return <p className={`text-muted ${className}`.trim()}>Loading availability...</p>;
-  }
-
-  if (!onlineConsultation) {
+  if (loading || !onlineConsultation) {
+    if (variant === 'compact') return null;
+    if (loading) {
+      return <p className={`text-muted ${className}`.trim()}>Loading availability...</p>;
+    }
     return (
       <div className={`doctor-online-toggle disabled ${className}`.trim()}>
         <p className="text-muted">Online consultations are not enabled on your profile.</p>
+      </div>
+    );
+  }
+
+  if (variant === 'compact') {
+    return (
+      <div className={`navbar-online-wrap ${className}`.trim()}>
+        <button
+          type="button"
+          className={`navbar-online-toggle ${isOnline ? 'is-online' : 'is-offline'}`}
+          onClick={handleToggle}
+          disabled={saving}
+          aria-pressed={isOnline}
+          title={isOnline ? 'You are online — tap to go offline' : 'You are offline — tap to go online'}
+        >
+          <span className="navbar-online-dot" aria-hidden="true" />
+          <span>{isOnline ? 'Online' : 'Offline'}</span>
+        </button>
+        {error && <span className="navbar-online-error">{error}</span>}
       </div>
     );
   }
