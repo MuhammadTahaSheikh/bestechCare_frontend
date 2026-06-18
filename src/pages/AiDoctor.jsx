@@ -2,11 +2,14 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import { useCity } from '../context/CityContext';
+import { useAuth } from '../context/AuthContext';
 import { useAiDoctorVoice } from '../hooks/useAiDoctorVoice';
 import { voiceLangFor } from '../utils/languageUtils';
+import { getLoginPath, getRegisterPath } from '../utils/authRedirect';
 import AiDoctorVideoCall from '../components/AiDoctorVideoCall';
 
 const SESSION_KEY = 'ai_doctor_session_id';
+const GUEST_MESSAGE_LIMIT = 3;
 
 const LANGUAGE_OPTIONS = [
   { id: 'en', label: 'English', native: 'English' },
@@ -34,6 +37,9 @@ function doctorLabel(gender) {
 
 export default function AiDoctor() {
   const { city } = useCity();
+  const { user } = useAuth();
+  const loginPath = getLoginPath('/ai-doctor');
+  const registerPath = getRegisterPath('/ai-doctor');
   const [sessionId, setSessionId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
@@ -55,10 +61,15 @@ export default function AiDoctor() {
   const syncReplyLanguageRef = useRef(null);
 
   const chatReady = Boolean(sessionId && setupStep === null);
+  const guestMessagesUsed = messages.filter((m) => m.role === 'user').length;
+  const loginRequired = !user && guestMessagesUsed >= GUEST_MESSAGE_LIMIT;
+  const guestMessagesRemaining = !user
+    ? Math.max(0, GUEST_MESSAGE_LIMIT - guestMessagesUsed)
+    : null;
 
   const sendMessage = useCallback(async (text) => {
     const trimmed = text?.trim();
-    if (!trimmed || !sessionId || sending) return;
+    if (!trimmed || !sessionId || sending || loginRequired) return;
 
     setInput('');
     setSending(true);
@@ -80,14 +91,18 @@ export default function AiDoctor() {
       ]);
       return { language, voice_lang: replyVoiceLang, reply, recommended_doctors: recommendedDoctors || [] };
     } catch (err) {
-      setError(err.message);
       setMessages((prev) => prev.slice(0, -1));
       setInput(trimmed);
+      if (err.code === 'LOGIN_REQUIRED') {
+        setError('You have used your 3 free messages. Please log in to continue.');
+      } else {
+        setError(err.message);
+      }
       return null;
     } finally {
       setSending(false);
     }
-  }, [sessionId, sending]);
+  }, [sessionId, sending, loginRequired]);
 
   sendMessageRef.current = sendMessage;
 
@@ -411,7 +426,7 @@ export default function AiDoctor() {
               </p>
             )}
           </div>
-          {!summary && userMessageCount > 0 && (
+          {!summary && user && guestMessagesUsed > 0 && (
             <button
               type="button"
               className="btn btn-secondary"
@@ -514,7 +529,25 @@ export default function AiDoctor() {
               <div ref={chatEndRef} />
             </div>
 
-            {!summary && configured && (
+            {!summary && configured && !user && chatReady && !loginRequired && (
+              <p className="ai-doctor-guest-notice">
+                Free trial: {guestMessagesRemaining} of {GUEST_MESSAGE_LIMIT} messages remaining.{' '}
+                <Link to={loginPath}>Log in</Link> for unlimited chat and a full summary.
+              </p>
+            )}
+
+            {!summary && configured && loginRequired && (
+              <div className="ai-doctor-login-gate">
+                <p>You have used your {GUEST_MESSAGE_LIMIT} free messages.</p>
+                <p className="text-muted">Log in to continue this consultation and get your full summary.</p>
+                <Link to={loginPath} className="btn btn-primary btn-sm">Login to Continue</Link>
+                <p className="auth-footer">
+                  New here? <Link to={registerPath}>Create an account</Link>
+                </p>
+              </div>
+            )}
+
+            {!summary && configured && !loginRequired && (
               <form className="ai-doctor-input-form" onSubmit={handleSend}>
                 <input
                   type="text"

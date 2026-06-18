@@ -84,7 +84,7 @@ export default function App() {
                 <Route path="/labs/:id" element={<LabDetail />} />
                 <Route path="/deals" element={<Deals />} />
                 <Route path="/medicines" element={<Medicines />} />
-                <Route path="/ai-doctor" element={<ProtectedRoute><AiDoctor /></ProtectedRoute>} />
+                <Route path="/ai-doctor" element={<AiDoctor />} />
                 <Route path="/cart" element={<Cart />} />
                 <Route path="/orders" element={<ProtectedRoute><MyOrders /></ProtectedRoute>} />
                 <Route path="/blog" element={<Blog />} />

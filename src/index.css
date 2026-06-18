@@ -3017,6 +3017,36 @@ a {
   font-size: 1rem;
 }
 
+.ai-doctor-guest-notice {
+  padding: 10px 16px;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.ai-doctor-guest-notice a {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.ai-doctor-login-gate {
+  padding: 20px 16px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+  background: var(--bg);
+}
+
+.ai-doctor-login-gate p {
+  margin-bottom: 8px;
+}
+
+.ai-doctor-login-gate .auth-footer {
+  margin-top: 12px;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
 .ai-doctor-summary {
   background: var(--white);
   border-radius: var(--radius);
