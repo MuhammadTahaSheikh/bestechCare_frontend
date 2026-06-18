@@ -54,7 +54,8 @@ a {
 
 .nav-mobile-user,
 .nav-mobile-extras,
-.nav-mobile-login {
+.nav-mobile-online,
+.nav-links .nav-mobile-login {
   display: none;
 }
 
@@ -2333,8 +2334,13 @@ a {
   }
 
   .nav-mobile-login {
+    display: inline-flex;
     margin-top: 12px;
     text-align: center;
+  }
+
+  .nav-mobile-online {
+    display: block;
   }
 
   .menu-toggle {
