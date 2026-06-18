@@ -603,6 +603,87 @@ a {
 }
 
 .badge-online { background: #dbeafe; color: #1d4ed8; }
+.badge-live-online { background: #dcfce7; color: #15803d; }
+.badge-offline { background: #f3f4f6; color: #6b7280; }
+
+.doctor-online-toggle {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.doctor-online-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.doctor-online-toggle h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1.1rem;
+}
+
+.online-toggle-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 112px;
+  height: 40px;
+  padding: 0 14px 0 44px;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.online-toggle-btn.online {
+  background: #16a34a;
+  color: #fff;
+}
+
+.online-toggle-btn.offline {
+  background: #9ca3af;
+  color: #fff;
+}
+
+.online-toggle-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.online-toggle-knob {
+  position: absolute;
+  left: 4px;
+  top: 4px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.2s ease;
+}
+
+.online-toggle-btn.online .online-toggle-knob {
+  transform: translateX(72px);
+}
+
+.online-toggle-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+@media (max-width: 640px) {
+  .doctor-online-toggle-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .online-toggle-btn {
+    align-self: flex-start;
+  }
+}
 .badge-clinic { background: #dcfce7; color: #15803d; }
 .badge-verified { background: var(--primary-light); color: var(--primary-dark); }
 .badge-discount { background: #fef3c7; color: #b45309; }

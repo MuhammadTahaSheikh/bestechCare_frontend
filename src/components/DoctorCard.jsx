@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { DoctorStatusBadge } from './DoctorOnlineToggle';
 
 export default function DoctorCard({ doctor }) {
   return (
@@ -15,7 +16,7 @@ export default function DoctorCard({ doctor }) {
           <span className="fee">Rs. {Number(doctor.consultation_fee).toLocaleString()}</span>
         </div>
         <div className="badges">
-          {doctor.online_consultation && <span className="badge badge-online">Online</span>}
+          <DoctorStatusBadge doctor={doctor} />
           {doctor.in_clinic && <span className="badge badge-clinic">In-Clinic</span>}
           {doctor.is_verified && <span className="badge badge-verified">Verified</span>}
         </div>

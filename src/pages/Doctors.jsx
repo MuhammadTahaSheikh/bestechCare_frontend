@@ -36,8 +36,12 @@ export default function Doctors() {
     <div className="page">
       <div className="container">
         <div className="page-header">
-          <h1>{online ? 'Online Doctors' : 'Find Doctors'}</h1>
-          <p>Book appointments with verified doctors in your city</p>
+          <h1>{online ? 'Doctors Online Now' : 'Find Doctors'}</h1>
+          <p>
+            {online
+              ? 'Doctors currently available for online video consultations'
+              : 'Book appointments with verified doctors in your city'}
+          </p>
         </div>
 
         <div className="filters">

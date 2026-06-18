@@ -3,6 +3,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { getLoginPath, getRegisterPath } from '../utils/authRedirect';
+import { DoctorStatusBadge } from '../components/DoctorOnlineToggle';
 
 export default function DoctorDetail() {
   const { id } = useParams();
@@ -60,6 +61,12 @@ export default function DoctorDetail() {
       .catch(() => setAvailableSlots([]))
       .finally(() => setSlotsLoading(false));
   }, [id, form.appointment_date, user]);
+
+  useEffect(() => {
+    if (doctor && form.type === 'online' && !doctor.is_online) {
+      setForm((prev) => ({ ...prev, type: 'in_clinic' }));
+    }
+  }, [doctor?.is_online, doctor?.id, form.type]);
 
   const minDate = new Date().toISOString().slice(0, 10);
 
@@ -125,7 +132,7 @@ export default function DoctorDetail() {
                   <span>{doctor.experience_years} years experience</span>
                 </div>
                 <div className="badges mt-2">
-                  {doctor.online_consultation && <span className="badge badge-online">Online</span>}
+                  <DoctorStatusBadge doctor={doctor} />
                   {doctor.in_clinic && <span className="badge badge-clinic">In-Clinic</span>}
                   {doctor.is_verified && <span className="badge badge-verified">Verified</span>}
                 </div>
@@ -254,8 +261,13 @@ export default function DoctorDetail() {
                     onChange={(e) => setForm({ ...form, type: e.target.value })}
                   >
                     {doctor.in_clinic && <option value="in_clinic">In-Clinic</option>}
-                    {doctor.online_consultation && <option value="online">Online</option>}
+                    {doctor.online_consultation && doctor.is_online && (
+                      <option value="online">Online</option>
+                    )}
                   </select>
+                  {doctor.online_consultation && !doctor.is_online && (
+                    <p className="text-muted">Online booking unavailable — doctor is currently offline.</p>
+                  )}
                 </div>
                 <div className="form-group">
                   <label>Notes (optional)</label>

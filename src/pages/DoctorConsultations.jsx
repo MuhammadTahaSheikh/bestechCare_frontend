@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
+import DoctorOnlineToggle from '../components/DoctorOnlineToggle';
 
 export default function DoctorConsultations() {
   const [appointments, setAppointments] = useState([]);
@@ -22,6 +23,8 @@ export default function DoctorConsultations() {
           <h1>My Online Consultations</h1>
           <p>Join video calls with your patients</p>
         </div>
+
+        <DoctorOnlineToggle className="detail-section" />
 
         {appointments.length === 0 ? (
           <div className="empty-state">No online consultations scheduled.</div>

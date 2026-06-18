@@ -39,6 +39,9 @@ export const api = {
     return request(`/doctors${query ? `?${query}` : ''}`);
   },
   getDoctor: (id) => request(`/doctors/${id}`),
+  getDoctorAvailability: () => request('/doctor/availability'),
+  setDoctorAvailability: (is_online) =>
+    request('/doctor/availability', { method: 'PATCH', body: JSON.stringify({ is_online }) }),
   getDoctorAvailableSlots: (doctorId, date) =>
     request(`/doctors/${doctorId}/available-slots?date=${encodeURIComponent(date)}`),
   getHospitals: (params = {}) => {
