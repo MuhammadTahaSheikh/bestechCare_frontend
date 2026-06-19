@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
+import GoogleSignInButton from '../components/GoogleSignInButton';
+import { GOOGLE_CLIENT_ID } from '../config';
 import { getRedirectFromSearch, getRegisterPath } from '../utils/authRedirect';
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirectTo = getRedirectFromSearch(searchParams);
@@ -13,6 +15,7 @@ export default function Login() {
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
   const [unverifiedEmail, setUnverifiedEmail] = useState('');
 
@@ -52,11 +55,43 @@ export default function Login() {
     }
   };
 
+  const handleGoogleSuccess = async (credentialResponse) => {
+    setError('');
+    setInfo('');
+    setUnverifiedEmail('');
+    setGoogleLoading(true);
+    try {
+      await loginWithGoogle(credentialResponse.credential);
+      navigate(redirectTo);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  const handleGoogleError = () => {
+    setError('Google sign-in was cancelled or failed. Please try again.');
+  };
+
   return (
     <div className="page auth-page">
       <div className="auth-card">
         <h1>Login to BestechCare</h1>
         <p className="text-muted">Access your appointments and health records</p>
+
+        {GOOGLE_CLIENT_ID && (
+          <>
+            <GoogleSignInButton
+              onSuccess={handleGoogleSuccess}
+              onError={handleGoogleError}
+              disabled={googleLoading || loading}
+            />
+            <div className="auth-divider">
+              <span>or</span>
+            </div>
+          </>
+        )}
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">

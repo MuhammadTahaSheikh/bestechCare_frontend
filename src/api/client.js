@@ -25,6 +25,7 @@ async function request(endpoint, options = {}) {
 export const api = {
   // Auth
   login: (body) => request('/auth/login', { method: 'POST', body: JSON.stringify(body) }),
+  googleLogin: (body) => request('/auth/google', { method: 'POST', body: JSON.stringify(body) }),
   register: (body) => request('/auth/register', { method: 'POST', body: JSON.stringify(body) }),
   verifyEmail: (token) => request(`/auth/verify-email?token=${encodeURIComponent(token)}`),
   resendVerification: (body) =>

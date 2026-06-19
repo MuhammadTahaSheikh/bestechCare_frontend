@@ -1016,6 +1016,41 @@ a {
   margin-top: 20px;
 }
 
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.google-signin {
+  display: flex;
+  justify-content: center;
+}
+
+.google-signin-btn {
+  width: 100%;
+}
+
+.google-signin-btn > div {
+  width: 100% !important;
+}
+
+.google-signin-disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
 .demo-credentials {
   text-align: center;
   margin-top: 12px;

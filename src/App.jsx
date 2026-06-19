@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route, Outlet } from 'react-router-dom';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthProvider } from './context/AuthContext';
+import { GOOGLE_CLIENT_ID } from './config';
 import { CityProvider } from './context/CityContext';
 import { CartProvider } from './context/CartContext';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -51,7 +53,7 @@ function MainLayout() {
 }
 
 export default function App() {
-  return (
+  const app = (
     <BrowserRouter>
       <AuthProvider>
         <CityProvider>
@@ -110,4 +112,10 @@ export default function App() {
       </AuthProvider>
     </BrowserRouter>
   );
+
+  if (GOOGLE_CLIENT_ID) {
+    return <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>{app}</GoogleOAuthProvider>;
+  }
+
+  return app;
 }
