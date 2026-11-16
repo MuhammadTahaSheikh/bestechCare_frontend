@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { DoctorStatusBadge } from './DoctorOnlineToggle';
+import { formatPkrAsUsd } from '../utils/currency';
 
 export default function DoctorCard({ doctor }) {
   return (
@@ -13,7 +14,7 @@ export default function DoctorCard({ doctor }) {
         {doctor.hospital_name && <p className="text-muted">{doctor.hospital_name}</p>}
         <div className="card-meta">
           <span className="rating">★ {doctor.rating}</span>
-          <span className="fee">Rs. {Number(doctor.consultation_fee).toLocaleString()}</span>
+          <span className="fee">{formatPkrAsUsd(doctor.consultation_fee)}</span>
         </div>
         <div className="badges">
           <DoctorStatusBadge doctor={doctor} />

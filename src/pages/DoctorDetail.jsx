@@ -3,6 +3,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { getLoginPath, getRegisterPath } from '../utils/authRedirect';
+import { formatPkrAsUsd } from '../utils/currency';
 import { DoctorStatusBadge } from '../components/DoctorOnlineToggle';
 
 export default function DoctorDetail() {
@@ -207,7 +208,7 @@ export default function DoctorDetail() {
           <div className="detail-sidebar">
             <div className="booking-card">
               <h3>Book Appointment</h3>
-              <p className="fee-display">Rs. {Number(doctor.consultation_fee).toLocaleString()}</p>
+              <p className="fee-display">{formatPkrAsUsd(doctor.consultation_fee)}</p>
 
               {!user ? (
                 <div className="booking-login-gate">

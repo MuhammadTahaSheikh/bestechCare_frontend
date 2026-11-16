@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api/client';
+import { formatPkrAsUsd, usdToPkr } from '../../utils/currency';
 
 const emptyForm = {
   name: '', email: '', password: '', phone: '', city_id: '',
@@ -44,7 +45,7 @@ export default function AdminDoctors() {
         specialty_id: Number(form.specialty_id),
         hospital_id: form.hospital_id ? Number(form.hospital_id) : null,
         experience_years: Number(form.experience_years) || 0,
-        consultation_fee: Number(form.consultation_fee) || 0,
+        consultation_fee: usdToPkr(form.consultation_fee),
       });
       setShowForm(false);
       setForm(emptyForm);
@@ -118,8 +119,8 @@ export default function AdminDoctors() {
               <input type="number" min="0" value={form.experience_years} onChange={(e) => setForm({ ...form, experience_years: e.target.value })} />
             </div>
             <div className="form-group">
-              <label>Consultation Fee (PKR)</label>
-              <input type="number" min="0" value={form.consultation_fee} onChange={(e) => setForm({ ...form, consultation_fee: e.target.value })} />
+              <label>Consultation Fee (USD)</label>
+              <input type="number" min="0" step="0.01" value={form.consultation_fee} onChange={(e) => setForm({ ...form, consultation_fee: e.target.value })} />
             </div>
           </div>
           <div className="form-group">
@@ -158,7 +159,7 @@ export default function AdminDoctors() {
               <tr key={d.id}>
                 <td>{d.name}</td>
                 <td>{d.specialty_name}</td>
-                <td>Rs. {Number(d.consultation_fee).toLocaleString()}</td>
+                <td>{formatPkrAsUsd(d.consultation_fee)}</td>
                 <td>★ {d.rating}</td>
                 <td>{d.is_verified ? '✅' : '❌'}</td>
                 <td>

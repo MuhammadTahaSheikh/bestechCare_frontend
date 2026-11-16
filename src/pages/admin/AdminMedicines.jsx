@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api/client';
+import { formatPkrAsUsd, usdToPkr } from '../../utils/currency';
 
 export default function AdminMedicines() {
   const [medicines, setMedicines] = useState([]);
@@ -19,7 +20,13 @@ export default function AdminMedicines() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const slug = form.slug || form.name.toLowerCase().replace(/\s+/g, '-');
-    await api.adminCreateMedicine({ ...form, slug, category_id: Number(form.category_id), price: Number(form.price), discounted_price: form.discounted_price ? Number(form.discounted_price) : null });
+    await api.adminCreateMedicine({
+      ...form,
+      slug,
+      category_id: Number(form.category_id),
+      price: usdToPkr(form.price),
+      discounted_price: form.discounted_price ? usdToPkr(form.discounted_price) : null,
+    });
     setShowForm(false);
     setForm({ name: '', slug: '', category_id: '', description: '', price: '', discounted_price: '', requires_prescription: false, stock: 100 });
     load();
@@ -57,12 +64,12 @@ export default function AdminMedicines() {
           </div>
           <div className="form-row">
             <div className="form-group">
-              <label>Price (PKR)</label>
-              <input type="number" required value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} />
+              <label>Price (USD)</label>
+              <input type="number" required min="0" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} />
             </div>
             <div className="form-group">
               <label>Discounted Price</label>
-              <input type="number" value={form.discounted_price} onChange={(e) => setForm({ ...form, discounted_price: e.target.value })} />
+              <input type="number" min="0" step="0.01" value={form.discounted_price} onChange={(e) => setForm({ ...form, discounted_price: e.target.value })} />
             </div>
             <div className="form-group">
               <label>Stock</label>
@@ -98,7 +105,7 @@ export default function AdminMedicines() {
               <tr key={m.id}>
                 <td>{m.name}</td>
                 <td>{m.category_name}</td>
-                <td>Rs. {Number(m.discounted_price || m.price).toLocaleString()}</td>
+                <td>{formatPkrAsUsd(m.discounted_price || m.price)}</td>
                 <td>{m.stock}</td>
                 <td>{m.requires_prescription ? 'Yes' : 'No'}</td>
                 <td>

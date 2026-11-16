@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api/client';
+import { formatPkrAsUsd, usdToPkr } from '../../utils/currency';
 
 const emptyLabForm = { name: '', description: '', city_id: '', phone: '', discount_percent: 0 };
 const emptyTestForm = { lab_id: '', name: '', description: '', price: '', discounted_price: '' };
@@ -48,8 +49,8 @@ export default function AdminLabs() {
       await api.adminCreateLabTest({
         ...testForm,
         lab_id: Number(testForm.lab_id),
-        price: Number(testForm.price),
-        discounted_price: testForm.discounted_price ? Number(testForm.discounted_price) : null,
+        price: usdToPkr(testForm.price),
+        discounted_price: testForm.discounted_price ? usdToPkr(testForm.discounted_price) : null,
       });
       setShowTestForm(false);
       setTestForm(emptyTestForm);
@@ -126,12 +127,12 @@ export default function AdminLabs() {
           </div>
           <div className="form-row">
             <div className="form-group">
-              <label>Price (PKR)</label>
-              <input type="number" required min="0" value={testForm.price} onChange={(e) => setTestForm({ ...testForm, price: e.target.value })} />
+              <label>Price (USD)</label>
+              <input type="number" required min="0" step="0.01" value={testForm.price} onChange={(e) => setTestForm({ ...testForm, price: e.target.value })} />
             </div>
             <div className="form-group">
               <label>Discounted Price</label>
-              <input type="number" min="0" value={testForm.discounted_price} onChange={(e) => setTestForm({ ...testForm, discounted_price: e.target.value })} />
+              <input type="number" min="0" step="0.01" value={testForm.discounted_price} onChange={(e) => setTestForm({ ...testForm, discounted_price: e.target.value })} />
             </div>
           </div>
           <div className="form-group">
@@ -185,8 +186,8 @@ export default function AdminLabs() {
               <tr key={t.id}>
                 <td>{t.name}</td>
                 <td>{t.lab_name}</td>
-                <td>Rs. {Number(t.price).toLocaleString()}</td>
-                <td>{t.discounted_price ? `Rs. ${Number(t.discounted_price).toLocaleString()}` : '—'}</td>
+                <td>{formatPkrAsUsd(t.price)}</td>
+                <td>{t.discounted_price ? formatPkrAsUsd(t.discounted_price) : '—'}</td>
               </tr>
             ))}
           </tbody>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { api } from '../api/client';
+import { formatPkrAsUsd } from '../utils/currency';
 
 export default function LabDetail() {
   const { id } = useParams();
@@ -58,8 +59,8 @@ export default function LabDetail() {
                     <tr key={t.id}>
                       <td><strong>{t.name}</strong></td>
                       <td>{t.description}</td>
-                      <td className="strike">Rs. {Number(t.price).toLocaleString()}</td>
-                      <td className="price">Rs. {Number(t.discounted_price || t.price).toLocaleString()}</td>
+                      <td className="strike">{formatPkrAsUsd(t.price)}</td>
+                      <td className="price">{formatPkrAsUsd(t.discounted_price || t.price)}</td>
                     </tr>
                   ))}
                 </tbody>

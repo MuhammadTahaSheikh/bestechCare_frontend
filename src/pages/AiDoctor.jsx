@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { useAiDoctorVoice } from '../hooks/useAiDoctorVoice';
 import { voiceLangFor } from '../utils/languageUtils';
 import { getLoginPath, getRegisterPath } from '../utils/authRedirect';
+import { formatPkrAsUsd } from '../utils/currency';
 import AiDoctorVideoCall from '../components/AiDoctorVideoCall';
 
 const SESSION_KEY = 'ai_doctor_session_id';
@@ -513,7 +514,7 @@ export default function AiDoctor() {
                           <strong>{d.name}</strong>
                           <span>{d.specialty_name}</span>
                           {d.hospital_name && <span className="text-muted">{d.hospital_name}</span>}
-                          <span>★ {d.rating} · PKR {Number(d.consultation_fee).toLocaleString()}</span>
+                          <span>★ {d.rating} · {formatPkrAsUsd(d.consultation_fee)}</span>
                         </Link>
                       ))}
                     </div>
@@ -646,7 +647,7 @@ export default function AiDoctor() {
                         <strong>{d.name}</strong>
                         <span>{d.specialty_name}</span>
                         {d.hospital_name && <span className="text-muted">{d.hospital_name}</span>}
-                        <span>★ {d.rating} · PKR {d.consultation_fee}</span>
+                        <span>★ {d.rating} · {formatPkrAsUsd(d.consultation_fee)}</span>
                       </Link>
                     ))}
                   </div>

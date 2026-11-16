@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api/client';
+import { formatPkrAsUsd } from '../../utils/currency';
 
 export default function AdminOrders() {
   const [orders, setOrders] = useState([]);
@@ -28,13 +29,13 @@ export default function AdminOrders() {
               </div>
               <div>
                 <span className={`status status-${order.status}`}>{order.status}</span>
-                <strong className="order-total">Rs. {Number(order.total_amount).toLocaleString()}</strong>
+                <strong className="order-total">{formatPkrAsUsd(order.total_amount)}</strong>
               </div>
             </div>
             <p className="text-muted">{order.shipping_address} · {order.phone}</p>
             <ul className="order-items-list">
               {order.items?.map((item) => (
-                <li key={item.id}>{item.medicine_name} × {item.quantity} — Rs. {Number(item.price).toLocaleString()}</li>
+                <li key={item.id}>{item.medicine_name} × {item.quantity} — {formatPkrAsUsd(item.price)}</li>
               ))}
             </ul>
             {nextStatus[order.status] && (

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
+import { formatPkrAsUsd } from '../utils/currency';
 
 export default function MyOrders() {
   const [orders, setOrders] = useState([]);
@@ -41,7 +42,7 @@ export default function MyOrders() {
                     <li key={item.id}>{item.medicine_name} × {item.quantity}</li>
                   ))}
                 </ul>
-                <p className="order-total">Total: Rs. {Number(order.total_amount).toLocaleString()}</p>
+                <p className="order-total">Total: {formatPkrAsUsd(order.total_amount)}</p>
                 {order.payment_status === 'unpaid' && order.status !== 'cancelled' && (
                   <Link to={`/payment?type=order&id=${order.id}`} className="btn btn-primary btn-sm">
                     Pay Now

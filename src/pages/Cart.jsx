@@ -4,6 +4,7 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
 import { getLoginPath, getRegisterPath } from '../utils/authRedirect';
+import { formatPkrAsUsd } from '../utils/currency';
 
 export default function Cart() {
   const { items, updateQuantity, removeItem, total, clearCart } = useCart();
@@ -61,7 +62,7 @@ export default function Cart() {
                 <div className="medicine-icon">💊</div>
                 <div className="cart-item-info">
                   <h3>{item.name}</h3>
-                  <p className="price">Rs. {Number(item.discounted_price || item.price).toLocaleString()}</p>
+                  <p className="price">{formatPkrAsUsd(item.discounted_price || item.price)}</p>
                 </div>
                 <div className="cart-item-qty">
                   <button onClick={() => updateQuantity(item.id, item.quantity - 1)}>−</button>
@@ -77,7 +78,7 @@ export default function Cart() {
             <h3>Order Summary</h3>
             <div className="cart-total">
               <span>Total</span>
-              <strong>Rs. {total.toLocaleString()}</strong>
+              <strong>{formatPkrAsUsd(total)}</strong>
             </div>
 
             {message ? (

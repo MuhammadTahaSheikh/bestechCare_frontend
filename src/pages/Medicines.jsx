@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api/client';
 import { useCart } from '../context/CartContext';
+import { formatPkrAsUsd } from '../utils/currency';
 
 export default function Medicines() {
   const [medicines, setMedicines] = useState([]);
@@ -63,9 +64,9 @@ export default function Medicines() {
               <p className="medicine-desc">{m.description}</p>
               <div className="medicine-price">
                 {m.discounted_price && (
-                  <span className="strike">Rs. {Number(m.price).toLocaleString()}</span>
+                  <span className="strike">{formatPkrAsUsd(m.price)}</span>
                 )}
-                <span className="price">Rs. {Number(m.discounted_price || m.price).toLocaleString()}</span>
+                <span className="price">{formatPkrAsUsd(m.discounted_price || m.price)}</span>
               </div>
               {m.requires_prescription && <span className="badge badge-rx">Prescription Required</span>}
               <button className="btn btn-primary btn-block" onClick={() => addItem(m)}>

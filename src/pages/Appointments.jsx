@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import { formatPkrAsUsd } from '../utils/currency';
 
 export default function Appointments() {
   const { user } = useAuth();
@@ -78,7 +79,7 @@ export default function Appointments() {
                     )}
                   </div>
                   {a.consultation_fee && (
-                    <p className="fee">Fee: Rs. {Number(a.consultation_fee).toLocaleString()}</p>
+                    <p className="fee">Fee: {formatPkrAsUsd(a.consultation_fee)}</p>
                   )}
                 </div>
                 <div className="appointment-actions">

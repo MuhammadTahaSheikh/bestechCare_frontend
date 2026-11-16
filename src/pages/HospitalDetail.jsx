@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../api/client';
+import { formatPkrAsUsd } from '../utils/currency';
 
 export default function HospitalDetail() {
   const { id } = useParams();
@@ -45,7 +46,7 @@ export default function HospitalDetail() {
                 <Link key={d.id} to={`/doctors/${d.id}`} className="doctor-list-item">
                   <span>{d.name}</span>
                   <span className="text-muted">{d.specialty_name}</span>
-                  <span>Rs. {Number(d.consultation_fee).toLocaleString()}</span>
+                  <span>{formatPkrAsUsd(d.consultation_fee)}</span>
                 </Link>
               ))}
             </div>

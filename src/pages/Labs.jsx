@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../api/client';
 import { useCity } from '../context/CityContext';
 import LabCard from '../components/LabCard';
+import { formatPkrAsUsd } from '../utils/currency';
 
 export default function Labs() {
   const { city } = useCity();
@@ -58,8 +59,8 @@ export default function Labs() {
                         <tr key={t.id}>
                           <td>{t.name}</td>
                           <td>{t.lab_name}</td>
-                          <td className="strike">Rs. {Number(t.price).toLocaleString()}</td>
-                          <td className="price">Rs. {Number(t.discounted_price || t.price).toLocaleString()}</td>
+                          <td className="strike">{formatPkrAsUsd(t.price)}</td>
+                          <td className="price">{formatPkrAsUsd(t.discounted_price || t.price)}</td>
                         </tr>
                       ))}
                     </tbody>

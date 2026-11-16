@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { api } from '../api/client';
+import { formatPkrAsUsd } from '../utils/currency';
 
 export default function Payment() {
   const [searchParams] = useSearchParams();
@@ -114,7 +115,7 @@ export default function Payment() {
           {preview && (
             <div className="payment-summary">
               <p><strong>{preview.title}</strong></p>
-              <p className="payment-amount">Rs. {Number(preview.amount).toLocaleString()}</p>
+              <p className="payment-amount">{formatPkrAsUsd(preview.amount)}</p>
               {preview.payment_live ? (
                 <p className="text-muted payment-mode-live">Live mode — amount will be deducted from your wallet</p>
               ) : (

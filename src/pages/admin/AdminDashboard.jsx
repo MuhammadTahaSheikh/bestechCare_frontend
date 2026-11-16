@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../api/client';
+import { formatPkrAsUsd } from '../../utils/currency';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
@@ -19,7 +20,7 @@ export default function AdminDashboard() {
     { label: 'Pending Appointments', value: stats.pending_appointments, link: '/admin/appointments' },
     { label: 'Medicine Orders', value: stats.orders, link: '/admin/orders' },
     { label: 'Active Medicines', value: stats.medicines, link: '/admin/medicines' },
-    { label: 'Revenue (PKR)', value: `Rs. ${Number(stats.revenue).toLocaleString()}`, link: '/admin/orders' },
+    { label: 'Revenue (USD)', value: formatPkrAsUsd(stats.revenue), link: '/admin/orders' },
   ];
 
   return (
