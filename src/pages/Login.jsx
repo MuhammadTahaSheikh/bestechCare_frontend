@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
 import GoogleSignInButton from '../components/GoogleSignInButton';
@@ -9,11 +9,12 @@ import { getRedirectFromSearch, getRegisterPath } from '../utils/authRedirect';
 export default function Login() {
   const { login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const redirectTo = getRedirectFromSearch(searchParams);
   const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
-  const [info, setInfo] = useState('');
+  const [info, setInfo] = useState(location.state?.info || '');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);

@@ -38,6 +38,10 @@ export default function Register() {
         ...form,
         city_id: form.city_id ? Number(form.city_id) : null,
       });
+      if (data.can_login) {
+        navigate(getLoginPath(searchParams.get('redirect')), { state: { info: data.message } });
+        return;
+      }
       navigate('/check-email', { state: { email: data.email } });
     } catch (err) {
       setError(err.message);
